@@ -9,3 +9,9 @@ paladin-23:
 iiwa-2:
   manuelli:
     path_to_data_directory: '/home/manuelli/data'
+
+jensen:
+  priya:
+    path_to_data_directory: '/raid/priya/data'
+
+
