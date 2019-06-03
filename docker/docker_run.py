@@ -5,7 +5,7 @@ import argparse
 import os
 import socket
 import getpass
-import yaml
+#import yaml
 
 if __name__=="__main__":
     user_name = getpass.getuser()
@@ -49,9 +49,9 @@ if __name__=="__main__":
     cmd += " --user %s " % user_name                                                    # login as current user
 
     # uncomment below to mount your data volume
-    config_yaml = yaml.load(file(config_file))
-    host_name = socket.gethostname()
-    cmd += " -v %s:%s/data_volume " %(config_yaml[host_name][user_name]['path_to_data_directory'], dense_correspondence_source_dir)
+#    config_yaml = yaml.load(file(config_file))
+#    host_name = socket.gethostname()
+#    cmd += " -v %s:%s/data_volume " %(config_yaml[host_name][user_name]['path_to_data_directory'], dense_correspondence_source_dir)
 
     # expose UDP ports
     cmd += " -p 8888:8888 "
