@@ -1627,7 +1627,7 @@ class DenseCorrespondenceEvaluation(object):
         scene_names = []
 
         img_pairs = []
-        for _ in range(5):
+        for _ in range(30):
             scene_name = dataset.get_random_scene_name()
             img_a_idx = dataset.get_random_image_index(scene_name)
             pose_a = dataset.get_pose_from_scene_name_and_idx(scene_name, img_a_idx)
@@ -2013,8 +2013,8 @@ class DenseCorrespondenceEvaluation(object):
         dcn.eval()
 
         if dataset is None:
-            dataset = dcn.load_training_dataset()
-
+            #dataset = dcn.load_training_dataset()
+	    dataset = dcn.load_dataset_for_network('synthetic_3')
         # compute dataset statistics
         if compute_descriptor_statistics:
             logging.info("Computing descriptor statistics on dataset")
@@ -2275,8 +2275,9 @@ class DenseCorrespondenceEvaluationPlotter(object):
         :return:
         :rtype:
         """
-        cumhist, l, b, e = ss.cumfreq(data, num_bins)
-        cumhist *= 1.0 / len(data)
+        logging.info(data) 
+	cumhist, l, b, e = ss.cumfreq(data, num_bins)
+	cumhist *= 1.0 / len(data)
         x_axis = l + b * np.arange(0, num_bins)
         x_axis /= x_axis_scale_factor
         plot = ax.plot(x_axis, cumhist, label=label)
@@ -2353,12 +2354,11 @@ class DenseCorrespondenceEvaluationPlotter(object):
             data_string = 'norm_diff_pred_3d_masked'
         else:
             data_string = 'norm_diff_pred_3d' 
-
-
+	
         data = df[data_string]
         data = data.dropna()
+	print "data: ", data
         data *= 100 # convert to cm
-
         plot = DCEP.make_cdf_plot(ax, data, num_bins=num_bins, label=label)
         if masked:
             ax.set_xlabel('3D match error (masked), L2 (cm)')
@@ -2465,7 +2465,7 @@ class DenseCorrespondenceEvaluationPlotter(object):
         data = data.dropna()
 
         cumhist, l, b, e = ss.cumfreq(data, num_bins)
-        cumhist *= 1.0 / len(data)
+	cumhist *= 1.0 / len(data)
 
         # b is bin width
         area_above_curve = b * np.sum((1-cumhist))
@@ -2540,34 +2540,34 @@ class DenseCorrespondenceEvaluationPlotter(object):
        
         # 3D match error
         ax = get_ax(axes, 1)
-        plot = DCEP.make_descriptor_accuracy_plot(ax, df, label=label)
-        if use_masked_plots:
-            plot = DCEP.make_descriptor_accuracy_plot(axes[1,1], df, label=label, masked=True)            
+#        plot = DCEP.make_descriptor_accuracy_plot(ax, df, label=label)
+#        if use_masked_plots:
+#            plot = DCEP.make_descriptor_accuracy_plot(axes[1,1], df, label=label, masked=True)            
 
 
         # if save:
         #     fig_file = os.path.join(output_dir, "norm_diff_pred_3d.png")
         #     fig.savefig(fig_file)
 
-        aac = DCEP.compute_area_above_curve(df, 'norm_diff_pred_3d')
+       	#aac = DCEP.compute_area_above_curve(df, 'norm_diff_pred_3d')
         d = dict()
-        d['norm_diff_3d_area_above_curve'] = float(aac)
+        #d['norm_diff_3d_area_above_curve'] = float(aac)
 
         # norm difference of the ground truth match (should be 0)
         ax = get_ax(axes,2)
-        plot = DCEP.make_norm_diff_ground_truth_plot(ax, df, label=label)
+#        plot = DCEP.make_norm_diff_ground_truth_plot(ax, df, label=label)
 
         # fraction false positives
         ax = get_ax(axes,3)
-        plot = DCEP.make_fraction_false_positives_plot(ax, df, label=label)
-        if use_masked_plots:
-            plot = DCEP.make_fraction_false_positives_plot(axes[3,1], df, label=label, masked=True)
+#        plot = DCEP.make_fraction_false_positives_plot(ax, df, label=label)
+#        if use_masked_plots:
+#            plot = DCEP.make_fraction_false_positives_plot(axes[3,1], df, label=label, masked=True)
 
         # average l2 false positives
         ax = get_ax(axes, 4)
-        plot = DCEP.make_average_l2_false_positives_plot(ax, df, label=label)
-        if use_masked_plots:
-            plot = DCEP.make_average_l2_false_positives_plot(axes[4,1], df, label=label, masked=True)
+#        plot = DCEP.make_average_l2_false_positives_plot(ax, df, label=label)
+#        if use_masked_plots:
+#            plot = DCEP.make_average_l2_false_positives_plot(axes[4,1], df, label=label, masked=True)
 
         yaml_file = os.path.join(output_dir, 'stats.yaml')
         utils.saveToYaml(d, yaml_file)

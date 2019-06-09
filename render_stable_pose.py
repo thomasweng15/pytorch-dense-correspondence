@@ -13,12 +13,12 @@ from autolab_core import RigidTransform, YamlConfig
 from meshrender import Scene, SceneObject, VirtualCamera, DirectionalLight, AmbientLight, MaterialProperties, SceneViewer, UniformPlanarWorksurfaceImageRandomVariable
 from perception import CameraIntrinsics, RenderMode, Image
 
-#PLANE_MESH = '/home/vsatish/Workspace/dev/dex-net/data/objects/plane/plane.obj'
-#PLANE_POSE = '/home/vsatish/Workspace/dev/dex-net/data/objects/plane/pose.tf'
+PLANE_MESH = '/home/vsatish/Workspace/dev/dex-net/data/objects/plane/plane.obj'
+PLANE_POSE = '/home/vsatish/Workspace/dev/dex-net/data/objects/plane/pose.tf'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('mesh', type=str)
-parser.add_argument('cfg', type=str)
+#parser.add_argument('cfg', type=str)
 parser.add_argument('num_images', type=int)
 parser.add_argument('output_folder', type=str)
 # parser.add_argument('--color', type=str, default="rgb") # rgb: save rgb image. depth: save depth as grayscale
@@ -27,15 +27,15 @@ parser.add_argument('--render_scene', action='store_true')
 args = parser.parse_args()
 
 # Create output folder if it doesn't already exist
-pathlib.Path(args.output_folder + "/processed/images/").mkdir(parents=True, exist_ok=True)
-pathlib.Path(args.output_folder + "/processed/images_rgb/").mkdir(parents=True, exist_ok=True)
+pathlib.Path(args.output_folder + "/processed/images/").mkdir(parents=True)
+pathlib.Path(args.output_folder + "/processed/images_rgb/").mkdir(parents=True)
 
 
 mesh_path = args.mesh
 stable_pose = args.stable_pose
 render_scene = args.render_scene
 
-print(mesh_path)
+#print mesh_path
 
 
 logging.getLogger().setLevel(logging.INFO)
@@ -43,7 +43,8 @@ logging.getLogger().setLevel(logging.INFO)
 logging.info('Loading mesh...')
 mesh = trimesh.load(mesh_path)
 # copy mesh to pdc location
-trimesh.io.export.export_mesh(mesh, file_obj=args.output_folder + "/processed/fusion_mesh.ply", file_type="ply")
+mesh.export(file_obj=args.output_folder + "/processed/fusion_mesh.ply", file_type="ply")
+#trimesh.io.export.export_mesh(mesh, file_obj=args.output_folder + "/processed/fusion_mesh.ply", file_type="ply")
 
 
 logging.info('Computing stable poses...')
@@ -140,44 +141,44 @@ camera = VirtualCamera(ci, cp)
 # Add the camera to the scene
 scene.camera = camera
 
-cfg = YamlConfig(args.cfg)
+#cfg = YamlConfig(args.cfg)
 
-# cfg = {
-#   'focal_length': {
-#       'min' : 520,
-#       'max' : 520,
-#   },
-#   'delta_optical_center': {
-#       'min' : 0.0,
-#       'max' : 0.0,
-#   },
-#   'radius': {
-#       'min' : 0.1,
-#       'max' : 0.15,
-#   },
-#   'azimuth': {
-#       'min' : 0.0,
-#       'max' : 360.0,
-#   },
-#   'elevation': {
-#       'min' : 0.0,
-#       'max' : 360.0,
-#   },
-#   'roll': {
-#       'min' : 0.0,
-#       'max' : 360.0,
-#   },
-#   'x': {
-#       'min' : -0.01,
-#       'max' : -0.01,
-#   },
-#   'y': {
-#       'min' : -0.01,
-#       'max' : 0.01,
-#   },
-#   'im_width': 640,
-#   'im_height': 480
-# }
+cfg = {
+   'focal_length': {
+       'min' : 520,
+       'max' : 520,
+   },
+   'delta_optical_center': {
+       'min' : 0.0,
+       'max' : 0.0,
+   },
+   'radius': {
+       'min' : 0.1,
+       'max' : 0.15,
+   },
+   'azimuth': {
+       'min' : 0.0,
+       'max' : 360.0,
+   },
+   'elevation': {
+       'min' : 0.0,
+       'max' : 360.0,
+   },
+   'roll': {
+       'min' : 0.0,
+       'max' : 360.0,
+   },
+   'x': {
+       'min' : -0.01,
+       'max' : -0.01,
+   },
+   'y': {
+       'min' : -0.01,
+       'max' : 0.01,
+   },
+   'im_width': 640,
+   'im_height': 480
+ }
 
 
 # num_images: 874 for test dataset, 3730 for train dataset
@@ -268,3 +269,4 @@ with open(args.output_folder + "/processed/images/pose_data.yaml", 'w') as outfi
     yaml.dump(camera_poses, outfile, default_flow_style=False)
 
 # v = SceneViewer(scene, raymond_lighting=True)
+

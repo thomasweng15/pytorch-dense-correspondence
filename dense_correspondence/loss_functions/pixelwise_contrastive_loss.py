@@ -161,8 +161,11 @@ class PixelwiseContrastiveLoss(object):
         if len(matches_a) == 1:
             matches_a_descriptors = matches_a_descriptors.unsqueeze(0)
             matches_b_descriptors = matches_b_descriptors.unsqueeze(0)
-
-        match_loss = 1.0 / num_matches * (matches_a_descriptors - matches_b_descriptors).pow(2).sum()
+	# adding for case when num_matches = 0
+	if not num_matches:
+		match_loss = 0
+        else:
+		match_loss = 1.0 / num_matches * (matches_a_descriptors - matches_b_descriptors).pow(2).sum()
 
         return match_loss, matches_a_descriptors, matches_b_descriptors
 
@@ -263,7 +266,7 @@ class PixelwiseContrastiveLoss(object):
 
         if self.debug:
             self._debug_data['num_hard_negatives'] = num_hard_negatives
-            self._debug_data['fraction_hard_negatives'] = num_hard_negatives * 1.0/num_non_matches
+#            self._debug_data['fraction_hard_negatives'] = num_hard_negatives * 1.0/num_non_matches
 
 
         return non_match_loss, num_hard_negatives
@@ -299,7 +302,7 @@ class PixelwiseContrastiveLoss(object):
 
         if self._debug:
             self._debug_data['num_hard_negatives'] = num_hard_negatives
-            self._debug_data['fraction_hard_negatives'] = num_hard_negatives * 1.0/num_non_matches
+            #self._debug_data['fraction_hard_negatives'] = num_hard_negatives * 1.0/num_non_matches
 
         return non_match_loss, num_hard_negatives
 
@@ -395,17 +398,20 @@ class PixelwiseContrastiveLoss(object):
 
         matches_a_descriptors = torch.index_select(image_a_pred, 1, matches_a)
         matches_b_descriptors = torch.index_select(image_b_pred, 1, matches_b)
-
-        match_loss = 1.0/num_matches * (matches_a_descriptors - matches_b_descriptors).pow(2).sum()
-
+        if num_matches:
+		match_loss = 1.0/num_matches * (matches_a_descriptors - matches_b_descriptors).pow(2).sum()
+	else:
+		match_loss = 0.0
         # add loss via non_matches
         non_matches_a_descriptors = torch.index_select(image_a_pred, 1, non_matches_a)
         non_matches_b_descriptors = torch.index_select(image_b_pred, 1, non_matches_b)
         pixel_wise_loss = (non_matches_a_descriptors - non_matches_b_descriptors).pow(2).sum(dim=2)
         pixel_wise_loss = torch.add(torch.neg(pixel_wise_loss), M_margin)
         zeros_vec = torch.zeros_like(pixel_wise_loss)
-        non_match_loss = non_match_loss_weight * 1.0/num_non_matches * torch.max(zeros_vec, pixel_wise_loss).sum()
-
+        if non_match_loss:
+		non_match_loss = non_match_loss_weight * 1.0/num_non_matches * torch.max(zeros_vec, pixel_wise_loss).sum()
+	else:
+		non_match_loss = 0.0
         loss = match_loss + non_match_loss
 
         return loss, match_loss, non_match_loss

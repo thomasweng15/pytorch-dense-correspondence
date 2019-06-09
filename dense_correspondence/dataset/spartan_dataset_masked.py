@@ -200,6 +200,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
         then we want to recreate a config from these.
         """
         self._config = config_expanded
+	print "printing config", self._config
         self._single_object_scene_dict = self._config["single_object"]
         self._multi_object_scene_dict = self._config["multi_object"] 
         self.logs_root_path =  utils.convert_to_absolute_path(self._config["logs_root_path"])
