@@ -1,0 +1,26 @@
+azimuth:
+  max: 360.0
+  min: 0.0
+delta_optical_center:
+  max: 0.0
+  min: 0.0
+elevation:
+  max: 360.0
+  min: 0.0
+focal_length:
+  max: 520
+  min: 520
+im_height: 480
+im_width: 640
+radius:
+  max: 90.0
+  min: 70.0
+roll:
+  max: 360.0
+  min: 0.0
+x:
+  max: -0.01
+  min: -0.01
+y:
+  max: 0.01
+  min: -0.01

@@ -34,9 +34,10 @@ if __name__=="__main__":
     dense_correspondence_source_dir = os.path.join(home_directory, 'code')
 
     cmd = "xhost +local:root \n"
-    cmd += "nvidia-docker run "
+    cmd += "nvidia-docker run --runtime=nvidia"
     if args.container:
         cmd += " --name %(container_name)s " % {'container_name': args.container}
+    cmd += "-e NVIDIA_DRIVER_CAPABILITIES=compute,utility "
 
     cmd += " -e DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix:rw "     # enable graphics 
     cmd += " -v %(source_dir)s:%(home_directory)s/code "  \

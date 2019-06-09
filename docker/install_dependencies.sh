@@ -18,8 +18,7 @@ apt install --no-install-recommends \
   dialog \
   python-pip \
   python-dev \
-  ffmpeg \
-  python3-tk
+  ffmpeg
 
 pip install --upgrade pip==9.0.3
 pip install -U setuptools
