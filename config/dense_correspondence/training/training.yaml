@@ -39,6 +39,7 @@ training:
 
 dense_correspondence_network:
   descriptor_dimension: 3
+  normalize: True
   image_width: 640
   image_height: 480
 

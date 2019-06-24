@@ -6,7 +6,7 @@ same_object: True
 different_objects: False
 multiple_object: False # sample from multi object scenes
 networks:
-- "caterpillar_3"
+- "rope_rigid_norm_3"
 
 norm_diff_threshold_dict:
   hats_consistent_M_background_0.500_3:

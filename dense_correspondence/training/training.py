@@ -1,4 +1,3 @@
-# system
 import numpy as np
 import os
 import fnmatch
@@ -16,9 +15,9 @@ from torch.autograd import Variable
 import torch.nn as nn
 import torch.optim as optim
 
-import visdom
+
 import tensorboard_logger
-from torchnet.logger import VisdomPlotLogger, VisdomLogger
+
 
 
 
@@ -64,7 +63,6 @@ class DenseCorrespondenceTraining(object):
         """
         self.load_dataset()
         self.setup_logging_dir()
-        #self.setup_visdom()
         self.setup_tensorboard()
 
 
@@ -90,7 +88,7 @@ class DenseCorrespondenceTraining(object):
         if self._dataset is None:
             self._dataset = SpartanDataset.make_default_10_scenes_drill()
 
-        
+
         self._dataset.load_all_pose_data()
         self._dataset.set_parameters_from_training_config(self._config)
 
@@ -102,7 +100,7 @@ class DenseCorrespondenceTraining(object):
             if self._dataset_test is None:
                 self._dataset_test = SpartanDataset(mode="test", config=self._dataset.config)
 
-            
+
             self._dataset_test.load_all_pose_data()
             self._dataset_test.set_parameters_from_training_config(self._config)
 
@@ -170,10 +168,8 @@ class DenseCorrespondenceTraining(object):
     def load_pretrained(self, model_folder, iteration=None):
         """
         Loads network and optimizer parameters from a previous training run.
-
         Note: It is up to the user to ensure that the model parameters match.
         e.g. width, height, descriptor dimension etc.
-
         :param model_folder: location of the folder containing the param files 001000.pth. Can be absolute or relative path. If relative then it is relative to pdc/trained_models/
         :type model_folder:
         :param iteration: which index to use, e.g. 3500, if None it loads the latest one
@@ -182,9 +178,12 @@ class DenseCorrespondenceTraining(object):
         :rtype:
         """
 
+
         if not os.path.isdir(model_folder):
             pdc_path = utils.getPdcPath()
             model_folder = os.path.join(pdc_path, "trained_models", model_folder)
+
+        print("Loading from model folder: {}".format(model_folder))
 
         # find idx.pth and idx.pth.opt files
         if iteration is None:
@@ -209,6 +208,8 @@ class DenseCorrespondenceTraining(object):
 
         self._optimizer = self._construct_optimizer(self._dcn.parameters())
         self._optimizer.load_state_dict(torch.load(optim_param_file))
+
+        print("Found iteration: {}".format(iteration))
 
         return iteration
 
@@ -272,7 +273,7 @@ class DenseCorrespondenceTraining(object):
         # logging
         self._logging_dict = dict()
         self._logging_dict['train'] = {"iteration": [], "loss": [], "match_loss": [],
-                                           "masked_non_match_loss": [], 
+                                           "masked_non_match_loss": [],
                                            "background_non_match_loss": [],
                                            "blind_non_match_loss": [],
                                            "learning_rate": [],
@@ -285,7 +286,7 @@ class DenseCorrespondenceTraining(object):
         if not use_pretrained:
             self.save_network(dcn, optimizer, 0)
 
-        for epoch in range(50):  # loop over the dataset multiple times
+        for epoch in range(500):  # loop over the dataset multiple times
 
             for i, data in enumerate(self._data_loader, 0):
                 loss_current_iteration += 1
@@ -305,7 +306,8 @@ class DenseCorrespondenceTraining(object):
 
 
                 data_type = metadata["type"][0]
-                
+
+
                 img_a = Variable(img_a.cuda(), requires_grad=False)
                 img_b = Variable(img_b.cuda(), requires_grad=False)
 
@@ -338,7 +340,7 @@ class DenseCorrespondenceTraining(object):
                                                                                 masked_non_matches_a, masked_non_matches_b,
                                                                                 background_non_matches_a, background_non_matches_b,
                                                                                 blind_non_matches_a, blind_non_matches_b)
-                
+
 
                 loss.backward()
                 optimizer.step()
@@ -348,115 +350,67 @@ class DenseCorrespondenceTraining(object):
                 print "single iteration took %.3f seconds" %(elapsed)
 
 
-                def update_visdom_plots(loss, match_loss, masked_non_match_loss, background_non_match_loss, blind_non_match_loss):
+                def update_plots(loss, match_loss, masked_non_match_loss, background_non_match_loss, blind_non_match_loss):
                     """
-                    Updates the visdom plots with current loss function information
+                    Updates the tensorboard plots with current loss function information
                     :return:
                     :rtype:
                     """
 
-                    ## WARNING: visdom is unstable and has changed its API
-                    ## current hack is to just not use visdom plotting
-                    return
-                    ## </end hack>
+
 
                     learning_rate = DenseCorrespondenceTraining.get_learning_rate(optimizer)
                     self._logging_dict['train']['learning_rate'].append(learning_rate)
-                    self._visdom_plots['learning_rate'].log(loss_current_iteration, learning_rate)
                     self._tensorboard_logger.log_value("learning rate", learning_rate, loss_current_iteration)
 
 
                     # Don't update any plots if the entry corresponding to that term
                     # is a zero loss
                     if not loss_composer.is_zero_loss(match_loss):
-                        self._logging_dict['train']['match_loss'].append(match_loss.data[0])
-                        self._visdom_plots['train']['match_loss'].log(loss_current_iteration, match_loss.data[0])
-                        self._tensorboard_logger.log_value("train match loss", match_loss.data[0], loss_current_iteration)
+                        self._logging_dict['train']['match_loss'].append(match_loss.data)
+                        self._tensorboard_logger.log_value("train match loss", match_loss.data, loss_current_iteration)
 
                     if not loss_composer.is_zero_loss(masked_non_match_loss):
-                        self._logging_dict['train']['masked_non_match_loss'].append(masked_non_match_loss.data[0])
-                        self._visdom_plots['train']['masked_non_match_loss'].log(loss_current_iteration,
-                                                             masked_non_match_loss.data[0])
-                        self._tensorboard_logger.log_value("train masked non match loss", masked_non_match_loss.data[0], loss_current_iteration)
+                        self._logging_dict['train']['masked_non_match_loss'].append(masked_non_match_loss.data)
+                        self._tensorboard_logger.log_value("train masked non match loss", masked_non_match_loss.data, loss_current_iteration)
 
                     if not loss_composer.is_zero_loss(background_non_match_loss):
-                        self._logging_dict['train']['background_non_match_loss'].append(background_non_match_loss.data[0])
-                        self._visdom_plots['train']['background_non_match_loss'].log(loss_current_iteration,
-                                                             background_non_match_loss.data[0])
-                        self._tensorboard_logger.log_value("train background non match loss", background_non_match_loss.data[0], loss_current_iteration)
+                        self._logging_dict['train']['background_non_match_loss'].append(background_non_match_loss.data)
+                        self._tensorboard_logger.log_value("train background non match loss", background_non_match_loss.data, loss_current_iteration)
 
                     if not loss_composer.is_zero_loss(blind_non_match_loss):
 
                         if data_type == SpartanDatasetDataType.SINGLE_OBJECT_WITHIN_SCENE:
-                            self._tensorboard_logger.log_value("train blind SINGLE_OBJECT_WITHIN_SCENE", blind_non_match_loss.data[0], loss_current_iteration)
+                            self._tensorboard_logger.log_value("train blind SINGLE_OBJECT_WITHIN_SCENE", blind_non_match_loss.data, loss_current_iteration)
 
                         if data_type == SpartanDatasetDataType.DIFFERENT_OBJECT:
-                            self._tensorboard_logger.log_value("train blind DIFFERENT_OBJECT", blind_non_match_loss.data[0], loss_current_iteration)
+                            self._tensorboard_logger.log_value("train blind DIFFERENT_OBJECT", blind_non_match_loss.data, loss_current_iteration)
 
 
                     # loss is never zero
                     if data_type == SpartanDatasetDataType.SINGLE_OBJECT_WITHIN_SCENE:
-                        self._tensorboard_logger.log_value("train loss SINGLE_OBJECT_WITHIN_SCENE", loss.data[0], loss_current_iteration)
+                        print "logging train loss", loss.data
+                        self._tensorboard_logger.log_value("train loss SINGLE_OBJECT_WITHIN_SCENE", loss.data, loss_current_iteration)
 
                     elif data_type == SpartanDatasetDataType.DIFFERENT_OBJECT:
-                        self._tensorboard_logger.log_value("train loss DIFFERENT_OBJECT", loss.data[0], loss_current_iteration)
+                        self._tensorboard_logger.log_value("train loss DIFFERENT_OBJECT", loss.data, loss_current_iteration)
 
                     elif data_type == SpartanDatasetDataType.SINGLE_OBJECT_ACROSS_SCENE:
-                        self._tensorboard_logger.log_value("train loss SINGLE_OBJECT_ACROSS_SCENE", loss.data[0], loss_current_iteration)
+                        self._tensorboard_logger.log_value("train loss SINGLE_OBJECT_ACROSS_SCENE", loss.data, loss_current_iteration)
 
                     elif data_type == SpartanDatasetDataType.MULTI_OBJECT:
-                        self._tensorboard_logger.log_value("train loss MULTI_OBJECT", loss.data[0], loss_current_iteration)
-                    
+                        self._tensorboard_logger.log_value("train loss MULTI_OBJECT", loss.data, loss_current_iteration)
+
                     elif data_type == SpartanDatasetDataType.SYNTHETIC_MULTI_OBJECT:
-                        self._tensorboard_logger.log_value("train loss SYNTHETIC_MULTI_OBJECT", loss.data[0], loss_current_iteration)
+                        self._tensorboard_logger.log_value("train loss SYNTHETIC_MULTI_OBJECT", loss.data, loss_current_iteration)
                     else:
                         raise ValueError("unknown data type")
 
 
                     if data_type == SpartanDatasetDataType.DIFFERENT_OBJECT:
-                        self._tensorboard_logger.log_value("train different object", loss.data[0], loss_current_iteration)
+                        self._tensorboard_logger.log_value("train different object", loss.data, loss_current_iteration)
 
-                    # #non_match_type = metadata['non_match_type'][0]
-                    # fraction_hard_negatives = pixelwise_contrastive_loss.debug_data['fraction_hard_negatives']
-
-                    # if pixelwise_contrastive_loss.debug:
-                    #     if non_match_type == "masked":
-                    #         self._visdom_plots['masked_hard_negative_rate'].log(loss_current_iteration, fraction_hard_negatives)
-                    #         self._tensorboard_logger.log_value("masked hard negative rate", fraction_hard_negatives, loss_current_iteration)
-                    #     elif non_match_type == "non_masked":
-                    #         self._visdom_plots['non_masked_hard_negative_rate'].log(loss_current_iteration,
-                    #                                                             fraction_hard_negatives)
-
-                    #         self._tensorboard_logger.log_value("non-masked hard negative rate", fraction_hard_negatives,
-                    #                                      loss_current_iteration)
-                    #     else:
-                    #         raise ValueError("uknown non_match_type %s" %(non_match_type))
-
-
-                # def update_visdom_test_loss_plots(test_loss, test_match_loss, test_non_match_loss):
-                #     """
-                #     Log data about test loss and update the visdom plots
-                #     :return:
-                #     :rtype:
-                #     """
-
-                #     self._logging_dict['test']['loss'].append(test_loss)
-                #     self._logging_dict['test']['match_loss'].append(test_match_loss)
-                #     self._logging_dict['test']['non_match_loss'].append(test_non_match_loss)
-                #     self._logging_dict['test']['iteration'].append(loss_current_iteration)
-
-
-                #     self._visdom_plots['test']['loss'].log(loss_current_iteration, test_loss)
-                #     self._visdom_plots['test']['match_loss'].log(loss_current_iteration, test_match_loss)
-                #     self._visdom_plots['test']['non_match_loss'].log(loss_current_iteration, test_non_match_loss)
-
-                #     self._tensorboard_logger.log_value('test loss', test_loss, loss_current_iteration)
-                #     self._tensorboard_logger.log_value('test match loss', test_match_loss, loss_current_iteration)
-                #     self._tensorboard_logger.log_value('test non-match loss', test_non_match_loss, loss_current_iteration)
-
-
-
-                update_visdom_plots(loss, match_loss, masked_non_match_loss, background_non_match_loss, blind_non_match_loss)
+                update_plots(loss, match_loss, masked_non_match_loss, background_non_match_loss, blind_non_match_loss)
 
                 if loss_current_iteration % save_rate == 0:
                     self.save_network(dcn, optimizer, loss_current_iteration, logging_dict=self._logging_dict)
@@ -482,8 +436,6 @@ class DenseCorrespondenceTraining(object):
                     dcn.eval()
                     test_loss, test_match_loss, test_non_match_loss = DCE.compute_loss_on_dataset(dcn,
                                                                                                   self._data_loader_test, self._config['loss_function'], num_iterations=self._config['training']['test_loss_num_iterations'])
-
-                    update_visdom_test_loss_plots(test_loss, test_match_loss, test_non_match_loss)
 
                     # delete these variables so we can free GPU memory
                     del test_loss, test_match_loss, test_non_match_loss
@@ -570,7 +522,7 @@ class DenseCorrespondenceTraining(object):
         utils.saveToYaml(self._config, training_params_file)
 
         dataset_params_file = os.path.join(self._logging_dir, 'dataset.yaml')
-        utils.saveToYaml(self._dataset.config, dataset_params_file)        
+        utils.saveToYaml(self._dataset.config, dataset_params_file)
 
     def adjust_learning_rate(self, optimizer, iteration):
         """
@@ -601,55 +553,6 @@ class DenseCorrespondenceTraining(object):
 
         return lr
 
-    def setup_visdom(self):
-        """
-        Sets up visdom visualizer
-        :return:
-        :rtype:
-        """
-        self.start_visdom()
-        self._visdom_env = self._logging_dir_name
-        self._vis = visdom.Visdom(env=self._visdom_env)
-
-        self._port = 8097
-        self._visdom_plots = dict()
-
-        self._visdom_plots["train"] = dict()
-        self._visdom_plots['train']['loss'] = VisdomPlotLogger(
-        'line', port=self._port, opts={'title': 'Train Loss'}, env=self._visdom_env)
-
-        self._visdom_plots['learning_rate'] = VisdomPlotLogger(
-        'line', port=self._port, opts={'title': 'Learning Rate'}, env=self._visdom_env)
-
-        self._visdom_plots['train']['match_loss'] = VisdomPlotLogger(
-        'line', port=self._port, opts={'title': 'Train Match Loss'}, env=self._visdom_env)
-
-        self._visdom_plots['train']['masked_non_match_loss'] = VisdomPlotLogger(
-            'line', port=self._port, opts={'title': 'Train Masked Non Match Loss'}, env=self._visdom_env)
-
-        self._visdom_plots['train']['background_non_match_loss'] = VisdomPlotLogger(
-            'line', port=self._port, opts={'title': 'Train Background Non Match Loss'}, env=self._visdom_env)
-
-        self._visdom_plots['train']['blind_non_match_loss'] = VisdomPlotLogger(
-            'line', port=self._port, opts={'title': 'Train Blind Non Match Loss'}, env=self._visdom_env)
-
-
-        self._visdom_plots["test"] = dict()
-        self._visdom_plots['test']['loss'] = VisdomPlotLogger(
-            'line', port=self._port, opts={'title': 'Test Loss'}, env=self._visdom_env)
-
-        self._visdom_plots['test']['match_loss'] = VisdomPlotLogger(
-            'line', port=self._port, opts={'title': 'Test Match Loss'}, env=self._visdom_env)
-
-        self._visdom_plots['test']['non_match_loss'] = VisdomPlotLogger(
-            'line', port=self._port, opts={'title': 'Test Non Match Loss'}, env=self._visdom_env)
-
-        self._visdom_plots['masked_hard_negative_rate'] = VisdomPlotLogger(
-            'line', port=self._port, opts={'title': 'Masked Matches Hard Negative Rate'}, env=self._visdom_env)
-
-        self._visdom_plots['non_masked_hard_negative_rate'] = VisdomPlotLogger(
-            'line', port=self._port, opts={'title': 'Non-Masked Hard Negative Rate'}, env=self._visdom_env)
-
     def setup_tensorboard(self):
         """
         Starts the tensorboard server and sets up the plotting
@@ -678,23 +581,3 @@ class DenseCorrespondenceTraining(object):
     def make_default():
         dataset = SpartanDataset.make_default_caterpillar()
         return DenseCorrespondenceTraining(dataset=dataset)
-
-
-    @staticmethod
-    def start_visdom():
-        """
-        Starts visdom if it's not already running
-        :return:
-        :rtype:
-        """
-
-        vis = visdom.Visdom()
-
-        if vis.check_connection():
-            logging.info("Visdom already running, returning")
-            return
-
-
-        logging.info("Starting visdom")
-        cmd = "python -m visdom.server"
-        subprocess.Popen([cmd], shell=True)

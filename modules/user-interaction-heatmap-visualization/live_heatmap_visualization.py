@@ -49,7 +49,7 @@ class HeatmapVisualization(object):
         self._dce = DenseCorrespondenceEvaluation(EVAL_CONFIG)
         self._load_networks()
         self._reticle_color = COLOR_GREEN
-        # self.load_specific_dataset() # uncomment if you want to load a specific dataset
+        self.load_specific_dataset() # uncomment if you want to load a specific dataset
 
     def _load_networks(self):
         # we will use the dataset for the first network in the series
@@ -73,12 +73,9 @@ class HeatmapVisualization(object):
                 self._dataset = dcn.load_training_dataset()
 
     def load_specific_dataset(self):
-        dataset_config_filename = os.path.join(utils.getDenseCorrespondenceSourceDir(), 'config', 'dense_correspondence',
-                                            'dataset', 'composite', 'hats_3_demo_composite.yaml')
-
         dataset_config_filename = os.path.join(utils.getDenseCorrespondenceSourceDir(), 'config',
                                                'dense_correspondence',
-                                               'dataset', 'composite', '4_shoes_all.yaml')
+                                               'dataset', 'composite', 'rope_rigid_only.yaml')
 
         dataset_config = utils.getDictFromYamlFilename(dataset_config_filename)
         self._dataset = SpartanDataset(config=dataset_config)
@@ -86,7 +83,10 @@ class HeatmapVisualization(object):
     def get_random_image_pair(self):
         object_id = self._dataset.get_random_object_id()
         scene_name_a = self._dataset.get_random_single_object_scene_name(object_id)
-        scene_name_b = self._dataset.get_different_scene_for_object(object_id, scene_name_a)
+#        scene_name_b = self._dataset.get_different_scene_for_object(object_id, scene_name_a)
+	scene_name_b = self._dataset.get_random_single_object_scene_name(object_id)
+	while scene_name_b == scene_name_a:
+	    scene_name_b = self._dataset.get_random_single_object_scene_name(object_id)
 
         if self._config["randomize_images"]:
             image_a_idx = self._dataset.get_random_image_index(scene_name_a)
@@ -308,6 +308,7 @@ if __name__ == "__main__":
     heatmap_vis = HeatmapVisualization(config)
     print "starting heatmap vis"
     heatmap_vis.run()
+    print "ran heatmap_vis"
     cv2.destroyAllWindows()
 
 cv2.destroyAllWindows()
