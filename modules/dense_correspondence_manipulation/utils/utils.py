@@ -13,6 +13,10 @@ import torch
 
 import dense_correspondence_manipulation.utils.transformations as transformations
 
+def getDictFromJSONFilename(filename):
+    with open(filename, "r") as stream:
+	return json.load(stream)
+
 def getDictFromYamlFilename(filename):
     """
     Read data from a YAML files

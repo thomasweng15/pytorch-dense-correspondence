@@ -42,24 +42,19 @@ class SpartanDataset(DenseCorrespondenceDataset):
         """
         :param config: This is for creating a dataset from a composite dataset config file.
             This is of the form:
-
-                logs_root_path: code/data_volume/pdc/logs_proto
-
+                logs_root_path: /home/davidtseng/pytorch-dense-correspondence/data_volume/pdc/logs_proto
                 single_object_scenes_config_files:
                 - caterpillar_17_scenes.yaml
                 - baymax.yaml
-
                 multi_object_scenes_config_files:
                 - multi_object.yaml
-
         :type config: dict()
-
         :param config_expanded: When a config is read, it is parsed into an expanded form
             which is actually used as self._config.  See the function _setup_scene_data()
             for how this is done.  We want to save this expanded config to disk as it contains
             all config information.  If loading a previously-used dataset configuration, we want
             to pass in the config_expanded.
-        :type config_expanded: dict() 
+        :type config_expanded: dict()
         """
 
         DenseCorrespondenceDataset.__init__(self, debug=debug)
@@ -69,12 +64,14 @@ class SpartanDataset(DenseCorrespondenceDataset):
         # which is called from training.py
         # and parameters are populated in training.yaml
         if self.debug:
-            # NOTE: these are not the same as the numbers 
+            # NOTE: these are not the same as the numbers
             # that get plotted in debug mode.
             # This is just so the dataset will "run".
             self._domain_randomize = False
-            self.num_masked_non_matches_per_match = 5
+#            self.num_masked_non_matches_per_match = 5
+#            self.num_background_non_matches_per_match = 5
             self.num_background_non_matches_per_match = 5
+            self.num_masked_non_matches_per_match = 5 
             self.cross_scene_num_samples = 1000
             self._use_image_b_mask_inv = True
             self.num_matching_attempts = 10000
@@ -88,6 +85,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
             raise ValueError("You need to give me either a config or config_expanded")
 
         self._pose_data = dict()
+        self._knots_info = dict()
         self._initialize_rgb_image_to_tensor()
 
         if mode == "test":
@@ -106,10 +104,9 @@ class SpartanDataset(DenseCorrespondenceDataset):
 
     def __getitem__(self, index):
         """
-        This overloads __getitem__ and is what is actually returned 
+        This overloads __getitem__ and is what is actually returned
         using a torch dataloader.
-
-        This small function randomly chooses one of our different 
+        This small function randomly chooses one of our different
         img pair types, then returns that type of data.
         """
 
@@ -145,23 +142,16 @@ class SpartanDataset(DenseCorrespondenceDataset):
     def _setup_scene_data(self, config):
         """
         Initializes the data for all the different types of scenes
-
         Creates two class attributes
-
         self._single_object_scene_dict
-
         Each entry of self._single_object_scene_dict is a dict with keys {"test", "train"}. The
         values are lists of scenes
-
         self._single_object_scene_dict has (key, value) = (object_id, scene config for that object)
-
         self._multi_object_scene_dict has (key, value) = ("train"/"test", list of scenes)
-
         Note that the scenes have absolute paths here
         """
 
         self.logs_root_path = utils.convert_to_absolute_path(config['logs_root_path'])
-
         self._single_object_scene_dict = dict()
 
         prefix = os.path.join(utils.getDenseCorrespondenceSourceDir(), 'config', 'dense_correspondence',
@@ -196,13 +186,12 @@ class SpartanDataset(DenseCorrespondenceDataset):
         """
         If we have previously saved to disk a dict with:
         "single_object", and
-        "multi_object" keys, 
+        "multi_object" keys,
         then we want to recreate a config from these.
         """
         self._config = config_expanded
-	print "printing config", self._config
         self._single_object_scene_dict = self._config["single_object"]
-        self._multi_object_scene_dict = self._config["multi_object"] 
+        self._multi_object_scene_dict = self._config["multi_object"]
         self.logs_root_path =  utils.convert_to_absolute_path(self._config["logs_root_path"])
 
     def _setup_data_load_types(self):
@@ -258,6 +247,9 @@ class SpartanDataset(DenseCorrespondenceDataset):
         :return:
         :rtype:
         """
+#        if "code" in self.logs_root_path:
+#            self.logs_root_path = self.logs_root_path.replace('/code', '/pytorch-dense-correspondence')
+
         return os.path.join(self.logs_root_path, scene_name, 'processed')
 
 
@@ -271,6 +263,10 @@ class SpartanDataset(DenseCorrespondenceDataset):
 
         for scene_name in self.scene_generator():
             self.get_pose_data(scene_name)
+
+    def load_all_knots_info(self):
+        for scene_name in self.scene_generator():
+            self.get_knots_info(scene_name)
 
     def get_pose_data(self, scene_name):
         """
@@ -287,6 +283,15 @@ class SpartanDataset(DenseCorrespondenceDataset):
             self._pose_data[scene_name] = utils.getDictFromYamlFilename(pose_data_filename)
 
         return self._pose_data[scene_name]
+    
+    def get_knots_info(self, scene_name):
+        if scene_name not in self._knots_info:
+            logging.info("Loading knots info for scene %s" %(scene_name))
+            knots_info_filename = os.path.join(self.get_full_path_for_scene(scene_name), 'images', 'knots_info.json')
+            self._knots_info[scene_name] = utils.getDictFromJSONFilename(knots_info_filename)
+#            knots_info_filename = os.path.join(self.get_full_path_for_scene(scene_name), 'images', 'knots_info.yaml')
+#            self._knots_info[scene_name] = utils.getDictFromYamlFilename(knots_info_filename)
+        return self._knots_info[scene_name]
 
 
     def get_pose_from_scene_name_and_idx(self, scene_name, idx):
@@ -360,11 +365,10 @@ class SpartanDataset(DenseCorrespondenceDataset):
         :return:
         :rtype:
         """
-        pose_data = self.get_pose_data(scene_name)
-        image_idxs = pose_data.keys() # list of integers
-        random.choice(image_idxs)
+	knots_info = self.get_knots_info(scene_name)
+        image_idxs = knots_info.keys()
         random_idx = random.choice(image_idxs)
-        return random_idx
+        return random_idx	
 
     def get_random_object_id(self):
         """
@@ -385,7 +389,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
         random_object_id = random.choice(object_id_list)
         object_id_int = sorted(self._single_object_scene_dict.keys()).index(random_object_id)
         return random_object_id, object_id_int
-        
+
     def get_random_single_object_scene_name(self, object_id):
         """
         Returns a random scene name for that object
@@ -524,82 +528,61 @@ class SpartanDataset(DenseCorrespondenceDataset):
     def get_within_scene_data(self, scene_name, metadata, for_synthetic_multi_object=False):
         """
         The method through which the dataset is accessed for training.
-
         Each call is is the result of
         a random sampling over:
         - random scene
         - random rgbd frame from that scene
         - random rgbd frame (different enough pose) from that scene
         - various randomization in the match generation and non-match generation procedure
-
         returns a large amount of variables, separated by commas.
-
         0th return arg: the type of data sampled (this can be used as a flag for different loss functions)
         0th rtype: string
-
         1st, 2nd return args: image_a_rgb, image_b_rgb
         1st, 2nd rtype: 3-dimensional torch.FloatTensor of shape (image_height, image_width, 3)
-
         3rd, 4th return args: matches_a, matches_b
         3rd, 4th rtype: 1-dimensional torch.LongTensor of shape (num_matches)
-
         5th, 6th return args: masked_non_matches_a, masked_non_matches_b
         5th, 6th rtype: 1-dimensional torch.LongTensor of shape (num_non_matches)
-
         7th, 8th return args: non_masked_non_matches_a, non_masked_non_matches_b
         7th, 8th rtype: 1-dimensional torch.LongTensor of shape (num_non_matches)
-
         7th, 8th return args: non_masked_non_matches_a, non_masked_non_matches_b
         7th, 8th rtype: 1-dimensional torch.LongTensor of shape (num_non_matches)
-
         9th, 10th return args: blind_non_matches_a, blind_non_matches_b
         9th, 10th rtype: 1-dimensional torch.LongTensor of shape (num_non_matches)
-
         11th return arg: metadata useful for plotting, and-or other flags for loss functions
         11th rtype: dict
-
         Return values 3,4,5,6,7,8,9,10 are all in the "single index" format for pixels. That is
-
         (u,v) --> n = u + image_width * v
-
         If no datapoints were found for some type of match or non-match then we return
         our "special" empty tensor. Note that due to the way the pytorch data loader
         functions you cannot return an empty tensor like torch.FloatTensor([]). So we
         return SpartanDataset.empty_tensor()
-
         """
 
         SD = SpartanDataset
 
         image_a_idx = self.get_random_image_index(scene_name)
-        image_a_rgb, image_a_depth, image_a_mask, image_a_pose = self.get_rgbd_mask_pose(scene_name, image_a_idx)
-
+        image_a_rgb, image_a_mask = self.get_rgb_mask(scene_name, image_a_idx)
         metadata['image_a_idx'] = image_a_idx
-
         # image b
-        image_b_idx = self.get_img_idx_with_different_pose(scene_name, image_a_pose, num_attempts=50)
+        image_b_idx = self.get_random_image_index(scene_name)
         metadata['image_b_idx'] = image_b_idx
         if image_b_idx is None:
             logging.info("no frame with sufficiently different pose found, returning")
             # TODO: return something cleaner than no-data
             image_a_rgb_tensor = self.rgb_image_to_tensor(image_a_rgb)
             return self.return_empty_data(image_a_rgb_tensor, image_a_rgb_tensor)
-
-        image_b_rgb, image_b_depth, image_b_mask, image_b_pose = self.get_rgbd_mask_pose(scene_name, image_b_idx)
-
-        image_a_depth_numpy = np.asarray(image_a_depth)
-        image_b_depth_numpy = np.asarray(image_b_depth)
+	
+        image_b_rgb, image_b_mask = self.get_rgb_mask(scene_name, image_b_idx)
 
         if self.sample_matches_only_off_mask:
             correspondence_mask = np.asarray(image_a_mask)
         else:
             correspondence_mask = None
-
+        img_a_knots, img_b_knots = self._knots_info[scene_name][image_a_idx], self._knots_info[scene_name][image_b_idx]
         # find correspondences
-        uv_a, uv_b = correspondence_finder.batch_find_pixel_correspondences(image_a_depth_numpy, image_a_pose,
-                                                                            image_b_depth_numpy, image_b_pose,
-                                                                            img_a_mask=correspondence_mask,
-                                                                            num_attempts=self.num_matching_attempts)
+        uv_a, uv_b = correspondence_finder.batch_find_pixel_correspondences(img_a_knots, img_b_knots, img_a_mask=None,
+                                                                            num_attempts=min(len(img_a_knots), self.num_matching_attempts))
 
         if for_synthetic_multi_object:
             return image_a_rgb, image_b_rgb, image_a_depth, image_b_depth, image_a_mask, image_b_mask, uv_a, uv_b
@@ -610,29 +593,24 @@ class SpartanDataset(DenseCorrespondenceDataset):
             image_a_rgb_tensor = self.rgb_image_to_tensor(image_a_rgb)
             return self.return_empty_data(image_a_rgb_tensor, image_a_rgb_tensor)
 
-    
         # data augmentation
         if self._domain_randomize:
             image_a_rgb = correspondence_augmentation.random_domain_randomize_background(image_a_rgb, image_a_mask)
             image_b_rgb = correspondence_augmentation.random_domain_randomize_background(image_b_rgb, image_b_mask)
 
-        if not self.debug:
-            [image_a_rgb, image_a_mask], uv_a = correspondence_augmentation.random_image_and_indices_mutation([image_a_rgb, image_a_mask], uv_a)
-            [image_b_rgb, image_b_mask], uv_b = correspondence_augmentation.random_image_and_indices_mutation(
-                [image_b_rgb, image_b_mask], uv_b)
-        else:  # also mutate depth just for plotting
-            [image_a_rgb, image_a_depth, image_a_mask], uv_a = correspondence_augmentation.random_image_and_indices_mutation(
-                [image_a_rgb, image_a_depth, image_a_mask], uv_a)
-            [image_b_rgb, image_b_depth, image_b_mask], uv_b = correspondence_augmentation.random_image_and_indices_mutation(
-                [image_b_rgb, image_b_depth, image_b_mask], uv_b)
-
-        image_a_depth_numpy = np.asarray(image_a_depth)
-        image_b_depth_numpy = np.asarray(image_b_depth)
-
+        # if not self.debug:
+        #     [image_a_rgb, image_a_mask], uv_a = correspondence_augmentation.random_image_and_indices_mutation([image_a_rgb, image_a_mask], uv_a)
+        #     [image_b_rgb, image_b_mask], uv_b = correspondence_augmentation.random_image_and_indices_mutation(
+        #         [image_b_rgb, image_b_mask], uv_b)
+        # else:  # also mutate depth just for plotting
+        #     [image_a_rgb, image_a_depth, image_a_mask], uv_a = correspondence_augmentation.random_image_and_indices_mutation(
+        #         [image_a_rgb, image_a_depth, image_a_mask], uv_a)
+        #     [image_b_rgb, image_b_depth, image_b_mask], uv_b = correspondence_augmentation.random_image_and_indices_mutation(
+        #         [image_b_rgb, image_b_depth, image_b_mask], uv_b)
 
         # find non_correspondences
         image_b_mask_torch = torch.from_numpy(np.asarray(image_b_mask)).type(torch.FloatTensor)
-        image_b_shape = image_b_depth_numpy.shape
+        image_b_shape = (480, 640)
         image_width = image_b_shape[1]
         image_height = image_b_shape[0]
 
@@ -696,7 +674,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
             if num_blind_samples > 0:
                 # blind_uv_b is a tuple of torch.LongTensor
                 # make sure we check that blind_uv_b is not None and that it is non-empty
-                
+
 
                 blind_uv_b = correspondence_finder.random_sample_from_masked_image_torch(image_b_mask_torch, num_blind_samples)
 
@@ -704,7 +682,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
                     no_blind_matches_found = True
                 elif len(blind_uv_b[0]) == 0:
                     no_blind_matches_found = True
-                else:    
+                else:
                     blind_non_matches_b = utils.uv_to_flattened_pixel_locations(blind_uv_b, image_width)
 
                     if len(blind_non_matches_b) == 0:
@@ -714,15 +692,15 @@ class SpartanDataset(DenseCorrespondenceDataset):
 
         if no_blind_matches_found:
             blind_non_matches_a = blind_non_matches_b = SD.empty_tensor()
-                
+
 
         if self.debug:
             # downsample so can plot
-            num_matches_to_plot = 10
+            num_matches_to_plot = 7
             plot_uv_a, plot_uv_b = SD.subsample_tuple_pair(uv_a, uv_b, num_samples=num_matches_to_plot)
 
             plot_uv_a_masked_long, plot_uv_b_masked_non_matches_long = SD.subsample_tuple_pair(uv_a_masked_long, uv_b_masked_non_matches_long, num_samples=num_matches_to_plot*3)
-            
+
             plot_uv_a_background_long, plot_uv_b_background_non_matches_long = SD.subsample_tuple_pair(uv_a_background_long, uv_b_background_non_matches_long, num_samples=num_matches_to_plot*3)
 
             blind_uv_a = utils.flattened_pixel_locations_to_u_v(blind_non_matches_a, image_width)
@@ -735,29 +713,29 @@ class SpartanDataset(DenseCorrespondenceDataset):
 
             # Show correspondences
             if uv_a is not None:
-                fig, axes = correspondence_plotter.plot_correspondences_direct(image_a_rgb_PIL, image_a_depth_numpy,
-                                                                               image_b_rgb_PIL, image_b_depth_numpy, 
+                fig, axes = correspondence_plotter.plot_correspondences_direct(image_a_rgb_PIL,
+                                                                               image_b_rgb_PIL,
                                                                                plot_uv_a, plot_uv_b, show=False)
 
-                correspondence_plotter.plot_correspondences_direct(image_a_rgb_PIL, image_a_depth_numpy, 
-                                                                   image_b_rgb_PIL, image_b_depth_numpy,
+                correspondence_plotter.plot_correspondences_direct(image_a_rgb_PIL,
+                                                                   image_b_rgb_PIL,
                                                                    plot_uv_a_masked_long, plot_uv_b_masked_non_matches_long,
                                                                    use_previous_plot=(fig, axes),
                                                                    circ_color='r')
 
-                fig, axes = correspondence_plotter.plot_correspondences_direct(image_a_rgb_PIL, image_a_depth_numpy,
-                                                                               image_b_rgb_PIL, image_b_depth_numpy,
+                fig, axes = correspondence_plotter.plot_correspondences_direct(image_a_rgb_PIL,
+                                                                               image_b_rgb_PIL,
                                                                                plot_uv_a, plot_uv_b, show=False)
 
-                correspondence_plotter.plot_correspondences_direct(image_a_rgb_PIL, image_a_depth_numpy, 
-                                                                   image_b_rgb_PIL, image_b_depth_numpy,
+                correspondence_plotter.plot_correspondences_direct(image_a_rgb_PIL,
+                                                                   image_b_rgb_PIL,
                                                                    plot_uv_a_background_long, plot_uv_b_background_non_matches_long,
                                                                    use_previous_plot=(fig, axes),
                                                                    circ_color='b')
 
 
-                correspondence_plotter.plot_correspondences_direct(image_a_rgb_PIL, image_a_depth_numpy, 
-                                                                   image_b_rgb_PIL, image_b_depth_numpy,
+                correspondence_plotter.plot_correspondences_direct(image_a_rgb_PIL,
+                                                                   image_b_rgb_PIL,
                                                                    plot_blind_uv_a, plot_blind_uv_b,
                                                                    circ_color='k', show=True)
 
@@ -770,7 +748,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
                 plt.imshow(np.asarray(image_a_mask) - 1)
                 plt.title("Mask of img a background")
                 plt.show()
-                
+
                 temp = matches_a_mask.view(image_height, -1)
                 plt.imshow(temp)
                 plt.title("Mask of img a object pixels for which there was a match")
@@ -826,7 +804,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
         object_id_a, object_id_b = self.get_two_different_object_ids()
         scene_name_a = self.get_random_single_object_scene_name(object_id_a)
         scene_name_b = self.get_random_single_object_scene_name(object_id_b)
-        
+
         metadata["object_id_a"]  = object_id_a
         metadata["scene_name_a"] = scene_name_a
         metadata["object_id_b"]  = object_id_b
@@ -842,7 +820,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
         object_id_a, object_id_b = self.get_two_different_object_ids()
         scene_name_a = self.get_random_single_object_scene_name(object_id_a)
         scene_name_b = self.get_random_single_object_scene_name(object_id_b)
-        
+
         metadata = dict()
         metadata["object_id_a"]  = object_id_a
         metadata["scene_name_a"] = scene_name_a
@@ -876,8 +854,8 @@ class SpartanDataset(DenseCorrespondenceDataset):
         matches_pair_a = (uv_a1, uv_a2)
         matches_pair_b = (uv_b1, uv_b2)
         merged_rgb_1, merged_mask_1, uv_a1, uv_a2, uv_b1, uv_b2 =\
-         correspondence_augmentation.merge_images_with_occlusions(image_a1_rgb, image_b1_rgb, 
-                                                                  image_a1_mask, image_b1_mask, 
+         correspondence_augmentation.merge_images_with_occlusions(image_a1_rgb, image_b1_rgb,
+                                                                  image_a1_mask, image_b1_mask,
                                                                   matches_pair_a, matches_pair_b)
 
         if (uv_a1 is None) or (uv_a2 is None) or (uv_b1 is None) or (uv_b2 is None):
@@ -888,8 +866,8 @@ class SpartanDataset(DenseCorrespondenceDataset):
         matches_pair_a = (uv_a2, uv_a1)
         matches_pair_b = (uv_b2, uv_b1)
         merged_rgb_2, merged_mask_2, uv_a2, uv_a1, uv_b2, uv_b1 =\
-         correspondence_augmentation.merge_images_with_occlusions(image_a2_rgb, image_b2_rgb, 
-                                                                  image_a2_mask, image_b2_mask, 
+         correspondence_augmentation.merge_images_with_occlusions(image_a2_rgb, image_b2_rgb,
+                                                                  image_a2_mask, image_b2_mask,
                                                                   matches_pair_a, matches_pair_b)
 
         if (uv_a1 is None) or (uv_a2 is None) or (uv_b1 is None) or (uv_b2 is None):
@@ -954,14 +932,14 @@ class SpartanDataset(DenseCorrespondenceDataset):
             print "PRE-MERGING"
             plot_uv_a1, plot_uv_a2 = SpartanDataset.subsample_tuple_pair(uv_a1, uv_a2, num_samples=num_matches_to_plot)
 
-            # correspondence_plotter.plot_correspondences_direct(image_a1_rgb, np.asarray(image_a1_depth), 
+            # correspondence_plotter.plot_correspondences_direct(image_a1_rgb, np.asarray(image_a1_depth),
             #                                                        image_a2_rgb, np.asarray(image_a2_depth),
             #                                                        plot_uv_a1, plot_uv_a2,
             #                                                        circ_color='g', show=True)
 
             plot_uv_b1, plot_uv_b2 = SpartanDataset.subsample_tuple_pair(uv_b1, uv_b2, num_samples=num_matches_to_plot)
 
-            # correspondence_plotter.plot_correspondences_direct(image_b1_rgb, np.asarray(image_b1_depth), 
+            # correspondence_plotter.plot_correspondences_direct(image_b1_rgb, np.asarray(image_b1_depth),
             #                                                        image_b2_rgb, np.asarray(image_b2_depth),
             #                                                        plot_uv_b1, plot_uv_b2,
             #                                                        circ_color='g', show=True)
@@ -973,43 +951,39 @@ class SpartanDataset(DenseCorrespondenceDataset):
 
             plot_uv_a_background_long, plot_uv_b_background_non_matches_long =\
                 SpartanDataset.subsample_tuple_pair(uv_a_background_long, uv_b_background_non_matches_long, num_samples=num_matches_to_plot)
-            
-            fig, axes = correspondence_plotter.plot_correspondences_direct(merged_rgb_1_PIL, np.asarray(image_b1_depth), 
+
+            fig, axes = correspondence_plotter.plot_correspondences_direct(merged_rgb_1_PIL, np.asarray(image_b1_depth),
                                                                    merged_rgb_2_PIL, np.asarray(image_b2_depth),
                                                                    plot_uv_1, plot_uv_2,
                                                                    circ_color='g', show=False)
 
-            correspondence_plotter.plot_correspondences_direct(merged_rgb_1_PIL, np.asarray(image_b1_depth), 
+            correspondence_plotter.plot_correspondences_direct(merged_rgb_1_PIL, np.asarray(image_b1_depth),
                                                                merged_rgb_2_PIL, np.asarray(image_b2_depth),
                                                                plot_uv_a_masked_long, plot_uv_b_masked_non_matches_long,
                                                                use_previous_plot=(fig, axes),
                                                                circ_color='r', show=True)
 
-            fig, axes = correspondence_plotter.plot_correspondences_direct(merged_rgb_1_PIL, np.asarray(image_b1_depth), 
+            fig, axes = correspondence_plotter.plot_correspondences_direct(merged_rgb_1_PIL, np.asarray(image_b1_depth),
                                                                    merged_rgb_2_PIL, np.asarray(image_b2_depth),
                                                                    plot_uv_1, plot_uv_2,
                                                                    circ_color='g', show=False)
 
-            correspondence_plotter.plot_correspondences_direct(merged_rgb_1_PIL, np.asarray(image_b1_depth), 
+            correspondence_plotter.plot_correspondences_direct(merged_rgb_1_PIL, np.asaGrray(image_b1_depth),
                                                                merged_rgb_2_PIL, np.asarray(image_b2_depth),
                                                                plot_uv_a_background_long, plot_uv_b_background_non_matches_long,
                                                                use_previous_plot=(fig, axes),
                                                                circ_color='b')
 
-        
+
         return metadata["type"], merged_rgb_1, merged_rgb_2, matches_a, matches_b, masked_non_matches_a, masked_non_matches_b, background_non_matches_a, background_non_matches_b, SD.empty_tensor(), SD.empty_tensor(), metadata
 
 
     def get_across_scene_data(self, scene_name_a, scene_name_b, metadata):
         """
         Essentially just returns a bunch of samples off the masks from scene_name_a, and scene_name_b.
-
         Since this data is across scene, we can't generate matches.
-
         Return args are for returning directly from __getitem__
-
         See get_within_scene_data() for documentation of return args.
-
         :param scene_name_a, scene_name_b: Names of scenes from which to each randomly sample an image
         :type scene_name_a, scene_name_b: strings
         :param metadata: a dict() holding metadata of the image pair, both for logging and for different downstream loss functions
@@ -1062,7 +1036,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
         image_b_shape = image_b_depth_numpy.shape
         image_width = image_b_shape[1]
         image_height = image_b_shape[0]
-        
+
         blind_uv_a_flat = SD.flatten_uv_tensor(blind_uv_a, image_width)
         blind_uv_b_flat = SD.flatten_uv_tensor(blind_uv_b, image_width)
 
@@ -1080,7 +1054,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
 
             plot_blind_uv_a, plot_blind_uv_b = SD.subsample_tuple_pair(blind_uv_a, blind_uv_b, num_samples=num_matches_to_plot*10)
 
-            correspondence_plotter.plot_correspondences_direct(image_a_rgb_PIL, image_a_depth_numpy, 
+            correspondence_plotter.plot_correspondences_direct(image_a_rgb_PIL, image_a_depth_numpy,
                                                                    image_b_rgb_PIL, image_b_depth_numpy,
                                                                    plot_blind_uv_a, plot_blind_uv_b,
                                                                    circ_color='k', show=True)
@@ -1099,7 +1073,6 @@ class SpartanDataset(DenseCorrespondenceDataset):
 
         # return self.config["image_normalization"]["mean"]
 
-        
         return constants.DEFAULT_IMAGE_MEAN
 
     def get_image_std_dev(self):
@@ -1116,7 +1089,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
 
         return constants.DEFAULT_IMAGE_STD_DEV
 
-        
+
 
     def rgb_image_to_tensor(self, img):
         """
@@ -1143,7 +1116,8 @@ class SpartanDataset(DenseCorrespondenceDataset):
         :return:
         :rtype:
         """
-        return uv_tensor[1].long() * image_width + uv_tensor[0].long()
+        result = uv_tensor[1].long() * image_width + uv_tensor[0].long()
+	return torch.min(result, torch.ones_like(result).long() * (( image_width * 480 ) - 1))
 
     @staticmethod
     def mask_image_from_uv_flat_tensor(uv_flat_tensor, image_width, image_height):

@@ -13,9 +13,9 @@ def plot_correspondences(images, uv_a, uv_b, use_previous_plot=None, circ_color=
     pixel_locs = [uv_a, uv_b, uv_a, uv_b]
     axes = axes.flat[0:]
     if use_previous_plot is not None:
-        axes = [axes[1], axes[3]]
-        images = [images[1], images[3]]
-        pixel_locs = [pixel_locs[1], pixel_locs[3]]
+        axes = [axes[1]]
+        images = [images[1]]
+        pixel_locs = [pixel_locs[1]]
     for ax, img, pixel_loc in zip(axes[0:], images, pixel_locs):
         ax.set_aspect('equal')
         if isinstance(pixel_loc[0], int) or isinstance(pixel_loc[0], float):
@@ -41,7 +41,7 @@ def plot_correspondences_from_dir(log_dir, img_a, img_b, uv_a, uv_b, use_previou
     images = [mpimg.imread(x) for x in images]
     return plot_correspondences(images, uv_a, uv_b, use_previous_plot=use_previous_plot, circ_color=circ_color, show=show)
 
-def plot_correspondences_direct(img_a_rgb, img_a_depth, img_b_rgb, img_b_depth, uv_a, uv_b, use_previous_plot=None, circ_color='g', show=True):
+def plot_correspondences_direct(img_a_rgb, img_b_rgb, uv_a, uv_b, use_previous_plot=None, circ_color='g', show=True):
     """
 
     Plots rgb and depth image pair along with circles at pixel locations
@@ -56,6 +56,5 @@ def plot_correspondences_direct(img_a_rgb, img_a_depth, img_b_rgb, img_b_depth, 
     :param show:
     :return:
     """
-    images = [img_a_rgb, img_b_rgb, img_a_depth, img_b_depth]
+    images = [img_a_rgb, img_b_rgb]
     return plot_correspondences(images, uv_a, uv_b, use_previous_plot=use_previous_plot, circ_color=circ_color, show=show)
-    

@@ -36,6 +36,7 @@ class PixelwiseContrastiveLoss(object):
                  M_descriptor=None, M_pixel=None, non_match_loss_weight=1.0, use_l2_pixel_loss=None):
         """
         Computes the loss function
+
         DCN = Dense Correspondence Network
         num_images = number of images in this batch
         num_matches = number of matches
@@ -43,9 +44,13 @@ class PixelwiseContrastiveLoss(object):
         W = image width
         H = image height
         D = descriptor dimension
+
+
         match_loss = 1/num_matches \sum_{num_matches} ||descriptor_a - descriptor_b||_2^2
         non_match_loss = 1/num_non_matches \sum_{num_non_matches} max(0, M_margin - ||descriptor_a - descriptor_b||_2)^2
+
         loss = match_loss + non_match_loss
+
         :param image_a_pred: Output of DCN network on image A.
         :type image_a_pred: torch.Variable(torch.FloatTensor) shape [1, W * H, D]
         :param image_b_pred: same as image_a_pred
@@ -99,7 +104,9 @@ class PixelwiseContrastiveLoss(object):
     def get_triplet_loss(image_a_pred, image_b_pred, matches_a, matches_b, non_matches_a, non_matches_b, alpha):
         """
         Computes the loss function
+
         \sum_{triplets} ||D(I_a, u_a, I_b, u_{b,match})||_2^2 - ||D(I_a, u_a, I_b, u_{b,non-match)||_2^2 + alpha 
+
         """
         num_matches = matches_a.size()[0]
         num_non_matches = non_matches_a.size()[0]
@@ -125,7 +132,9 @@ class PixelwiseContrastiveLoss(object):
     def match_loss(image_a_pred, image_b_pred, matches_a, matches_b):
         """
         Computes the match loss given by
+
         1/num_matches * \sum_{matches} ||D(I_a, u_a, I_b, u_b)||_2^2
+
         :param image_a_pred: Output of DCN network on image A.
         :type image_a_pred: torch.Variable(torch.FloatTensor) shape [1, W * H, D]
         :param image_b_pred: same as image_a_pred
@@ -134,8 +143,10 @@ class PixelwiseContrastiveLoss(object):
         to (u,v) ---> image_width * v + u, this matches the shape of one dimension of image_a_pred
         :type matches_a: torch.Variable(torch.FloatTensor)
         :param matches_b: same as matches_b
+
         :return: match_loss, matches_a_descriptors, matches_b_descriptors
         :rtype: torch.Variable(),
+
         matches_a_descriptors is torch.FloatTensor with shape torch.Shape([num_matches, descriptor_dimension])
         """
 
@@ -150,10 +161,9 @@ class PixelwiseContrastiveLoss(object):
         if len(matches_a) == 1:
             matches_a_descriptors = matches_a_descriptors.unsqueeze(0)
             matches_b_descriptors = matches_b_descriptors.unsqueeze(0)
-	if num_matches:
-	        match_loss = 1.0 / num_matches * (matches_a_descriptors - matches_b_descriptors).pow(2).sum()
-	else:
-		match_loss = 0.0 * (matches_a_descriptors - matches_b_descriptors).pow(2).sum()
+
+        match_loss = 1.0 / num_matches * (matches_a_descriptors - matches_b_descriptors).pow(2).sum()
+
         return match_loss, matches_a_descriptors, matches_b_descriptors
 
 
@@ -161,8 +171,10 @@ class PixelwiseContrastiveLoss(object):
     def non_match_descriptor_loss(image_a_pred, image_b_pred, non_matches_a, non_matches_b, M=0.5, invert=False):
         """
         Computes the max(0, M - D(I_a,I_b,u_a,u_b))^2 term
+
         This is effectively:       "a and b should be AT LEAST M away from each other"
         With invert=True, this is: "a and b should be AT MOST  M away from each other" 
+
          :param image_a_pred: Output of DCN network on image A.
         :type image_a_pred: torch.Variable(torch.FloatTensor) shape [1, W * H, D]
         :param image_b_pred: same as image_a_pred
@@ -205,7 +217,9 @@ class PixelwiseContrastiveLoss(object):
                                           M_pixel=None):
 
         """
+
         Computes the total non_match_loss with an l2_pixel norm term
+
         :param image_a_pred: Output of DCN network on image A.
         :type image_a_pred: torch.Variable(torch.FloatTensor) shape [1, W * H, D]
         :param image_b_pred: same as image_a_pred
@@ -219,6 +233,7 @@ class PixelwiseContrastiveLoss(object):
         to (u,v) ---> image_width * v + u, this matches the shape of image_a_pred
         :type non_matches_a: torch.Variable(torch.FloatTensor)
         :param non_matches_b: same as non_matches_a
+
         :param M_descriptor: margin for descriptor loss term
         :type M_descriptor: float
         :param M_pixel: margin for pixel loss term
@@ -248,7 +263,7 @@ class PixelwiseContrastiveLoss(object):
 
         if self.debug:
             self._debug_data['num_hard_negatives'] = num_hard_negatives
-#            self._debug_data['fraction_hard_negatives'] = num_hard_negatives * 1.0/num_non_matches
+            self._debug_data['fraction_hard_negatives'] = num_hard_negatives * 1.0/num_non_matches
 
 
         return non_match_loss, num_hard_negatives
@@ -284,7 +299,7 @@ class PixelwiseContrastiveLoss(object):
 
         if self._debug:
             self._debug_data['num_hard_negatives'] = num_hard_negatives
-            #self._debug_data['fraction_hard_negatives'] = num_hard_negatives * 1.0/num_non_matches
+            self._debug_data['fraction_hard_negatives'] = num_hard_negatives * 1.0/num_non_matches
 
         return non_match_loss, num_hard_negatives
 
@@ -292,7 +307,9 @@ class PixelwiseContrastiveLoss(object):
     def l2_pixel_loss(self, matches_b, non_matches_b, M_pixel=None):
         """
         Apply l2 loss in pixel space.
+
         This weights non-matches more if they are "far away" in pixel space.
+
         :param matches_b: A torch.LongTensor with shape torch.Shape([num_matches])
         :param non_matches_b: A torch.LongTensor with shape torch.Shape([num_non_matches])
         :return l2 loss per sample: A torch.FloatTensorof with shape torch.Shape([num_matches])
@@ -322,9 +339,12 @@ class PixelwiseContrastiveLoss(object):
         """
         :param flat_pixel_locations: A torch.LongTensor of shape torch.Shape([n,1]) where each element
          is a flattened pixel index, i.e. some integer between 0 and 307,200 for a 640x480 image
+
         :type flat_pixel_locations: torch.LongTensor
+
         :return A torch.LongTensor of shape (n,2) where the first column is the u coordinates of
         the pixel and the second column is the v coordinate
+
         """
         u_v_pixel_locations = flat_pixel_locations.repeat(1,2)
         u_v_pixel_locations[:,0] = u_v_pixel_locations[:,0]%self.image_width 

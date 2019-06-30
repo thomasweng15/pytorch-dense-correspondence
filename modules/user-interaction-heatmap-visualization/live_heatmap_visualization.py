@@ -3,7 +3,7 @@ import os
 import cv2
 import numpy as np
 import copy
-
+from PIL import Image
 import dense_correspondence_manipulation.utils.utils as utils
 dc_source_dir = utils.getDenseCorrespondenceSourceDir()
 sys.path.append(dc_source_dir)
@@ -75,7 +75,7 @@ class HeatmapVisualization(object):
     def load_specific_dataset(self):
         dataset_config_filename = os.path.join(utils.getDenseCorrespondenceSourceDir(), 'config',
                                                'dense_correspondence',
-                                               'dataset', 'composite', 'rope_rigid_only.yaml')
+                                               'dataset', 'composite', 'rope_nonrigid_40node_only.yaml')
 
         dataset_config = utils.getDictFromYamlFilename(dataset_config_filename)
         self._dataset = SpartanDataset(config=dataset_config)
@@ -188,8 +188,12 @@ class HeatmapVisualization(object):
         self.img1_gray = cv2.cvtColor(self.img1, cv2.COLOR_RGB2GRAY) / 255.0
         self.img2_gray = cv2.cvtColor(self.img2, cv2.COLOR_RGB2GRAY) / 255.0
 
-        cv2.imshow('source', self.img1)
-        cv2.imshow('target', self.img2)
+#        cv2.imshow('source', self.img1)
+        source = Image.fromarray(self.img1, 'RGB')
+	source.show() 
+#	cv2.imshow('target', self.img2)
+	target = Image.fromarray(self.img2, 'RGB')
+	target.show()
 
         self._res_a = dict()
         self._res_b = dict()
@@ -231,7 +235,9 @@ class HeatmapVisualization(object):
 
         img_1_with_reticle = np.copy(self.img1)
         draw_reticle(img_1_with_reticle, u, v, self._reticle_color)
-        cv2.imshow("source", img_1_with_reticle)
+#        cv2.imshow("source", img_1_with_reticle)
+	source = Image.fromarray(img_1_with_reticle, 'RGB')
+	source.show()
 
         alpha = self._config["blend_weight_original_image"]
         beta = 1 - alpha
@@ -272,9 +278,13 @@ class HeatmapVisualization(object):
             draw_reticle(heatmap, best_match_uv[0], best_match_uv[1], reticle_color)
             draw_reticle(img_2_with_reticle, best_match_uv[0], best_match_uv[1], reticle_color)
             blended = cv2.addWeighted(self.img2_gray, alpha, heatmap, beta, 0)
-            cv2.imshow(network_name, blended)
+            #cv2.imshow(network_name, blended)
+	    blended = Image.fromarray(blended, 'RGB')
+	    blended.show()
 
-        cv2.imshow("target", img_2_with_reticle)
+#        cv2.imshow("target", img_2_with_reticle)
+	target = Image.fromarray(img_2_with_reticle, 'RGB')
+	target.show()
         if event == cv2.EVENT_LBUTTONDOWN:
             utils.saveToYaml(self._res_uv, 'clicked_point.yaml')
 

@@ -24,7 +24,7 @@ class DenseCorrespondenceNetwork(nn.Module):
     IMAGE_TO_TENSOR = valid_transform = transforms.Compose([transforms.ToTensor(), ])
 
     def __init__(self, fcn, descriptor_dimension, image_width=640,
-                 image_height=480, normalize=False):
+                 image_height=480, normalize=True):
         """
 
         :param fcn:
@@ -163,7 +163,7 @@ class DenseCorrespondenceNetwork(nn.Module):
         self._normalize_tensor_transform = transforms.Normalize(self.image_mean, self.image_std_dev)
 
 
-    def forward_on_img(self, img, cuda=True):
+    def forward_on_img(self, img, cuda=False):
         """
         Runs the network forward on an image
         :param img: img is an image as a numpy array in opencv format [0,255]
@@ -187,7 +187,7 @@ class DenseCorrespondenceNetwork(nn.Module):
         warnings.warn("use forward method instead", DeprecationWarning)
 
         img = img.unsqueeze(0)
-        img = Variable(img.cuda())
+        img = Variable(img)
         res = self.fcn(img)
         res = res.squeeze(0)
         res = res.permute(1, 2, 0)
@@ -243,7 +243,7 @@ class DenseCorrespondenceNetwork(nn.Module):
 
         # The fcn throws and error if we don't use a variable here . . .
         # Maybe it's because it is in train mode?
-        img_tensor = Variable(img_tensor.cuda(), requires_grad=False)
+        img_tensor = Variable(img_tensor, requires_grad=False)
         res = self.forward(img_tensor) # shape [1,D,H,W]
         # print "res.shape 1", res.shape
 
@@ -340,12 +340,12 @@ class DenseCorrespondenceNetwork(nn.Module):
             assert model_param_file is not None
             config['model_param_file'] = model_param_file # should be an absolute path
             try:
-                dcn.load_state_dict(torch.load(model_param_file))
+                dcn.load_state_dict(torch.load(model_param_file, map_location='cpu'))
             except:
                 logging.info("loading params with the new style failed, falling back to dcn.fcn.load_state_dict")
                 dcn.fcn.load_state_dict(torch.load(model_param_file))
 
-        dcn.cuda()
+        #dcn.cuda()
         dcn.train()
         dcn.config = config
         return dcn

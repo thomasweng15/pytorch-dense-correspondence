@@ -245,6 +245,14 @@ class DenseCorrespondenceDataset(data.Dataset):
 
         return rgb, depth, mask, pose
 
+
+    def get_rgb_mask(self, scene_name, img_idx):
+        rgb_file = self.get_image_filename(scene_name, img_idx, ImageType.RGB)
+        rgb = self.get_rgb_image(rgb_file)
+        mask_file = self.get_image_filename(scene_name, img_idx, ImageType.MASK)
+        mask = self.get_mask_image(mask_file)
+        return rgb, mask
+
     def get_random_rgbd_mask_pose(self):
         """
         Simple wrapper method for `get_rgbd_mask_pose`.
@@ -256,7 +264,10 @@ class DenseCorrespondenceDataset(data.Dataset):
         img_idx = self.get_random_image_index(scene_name)
         return self.get_rgbd_mask_pose(scene_name, img_idx)
 
-
+    def get_random_rgb_mask(self):
+	scene_name = self.get_random_scene_name()
+	img_idx = self.get_random_image_index(scene_name)
+	return self.get_rgb_mask(scene_name, img_idx)
     def get_img_idx_with_different_pose(self, scene_name, pose_a, threshold=0.2, angle_threshold=20, num_attempts=10):
         """
         Try to get an image with a different pose to the one passed in. If one can't be found
@@ -360,7 +371,9 @@ class DenseCorrespondenceDataset(data.Dataset):
         :param mask_filename: string of full path to mask image
         :return: PIL.Image.Image
         """
-        return Image.open(mask_filename)
+        img = Image.open(mask_filename)
+        img = img = img.convert('L')
+        return img
 
     def get_mask_image_from_scene_name_and_idx(self, scene_name, img_idx):
         """
