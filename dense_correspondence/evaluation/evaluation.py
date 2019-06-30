@@ -766,7 +766,7 @@ class DenseCorrespondenceEvaluation(object):
 	
 
 	knots = dataset.get_knots_info(scene_name)
-	img_a_knots, img_b_knots = knots[img_a_idx], knots[img_b_idx]
+	img_a_knots, img_b_knots = knots[str(img_a_idx)], knots[str(img_b_idx)]
 #        depth_a = np.asarray(depth_a)
 #        depth_b = np.asarray(depth_b)
         mask_a = np.asarray(mask_a)

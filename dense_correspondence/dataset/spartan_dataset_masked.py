@@ -367,7 +367,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
         """
 	knots_info = self.get_knots_info(scene_name)
         image_idxs = knots_info.keys()
-        random_idx = random.choice(image_idxs)
+        random_idx = int(random.choice(image_idxs))
         return random_idx	
 
     def get_random_object_id(self):
@@ -579,7 +579,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
             correspondence_mask = np.asarray(image_a_mask)
         else:
             correspondence_mask = None
-        img_a_knots, img_b_knots = self._knots_info[scene_name][image_a_idx], self._knots_info[scene_name][image_b_idx]
+        img_a_knots, img_b_knots = self._knots_info[scene_name][str(image_a_idx)], self._knots_info[scene_name][str(image_b_idx)]
         # find correspondences
         uv_a, uv_b = correspondence_finder.batch_find_pixel_correspondences(img_a_knots, img_b_knots, img_a_mask=None,
                                                                             num_attempts=min(len(img_a_knots), self.num_matching_attempts))
