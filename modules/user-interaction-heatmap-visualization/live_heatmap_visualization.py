@@ -75,7 +75,7 @@ class HeatmapVisualization(object):
     def load_specific_dataset(self):
         dataset_config_filename = os.path.join(utils.getDenseCorrespondenceSourceDir(), 'config',
                                                'dense_correspondence',
-                                               'dataset', 'composite', 'rope_nonrigid_40node_only.yaml')
+                                               'dataset', 'composite', 'rope_nonrigid_412vert_only.yaml')
 
         dataset_config = utils.getDictFromYamlFilename(dataset_config_filename)
         self._dataset = SpartanDataset(config=dataset_config)
