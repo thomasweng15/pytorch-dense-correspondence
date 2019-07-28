@@ -38,7 +38,7 @@ train_config_file = os.path.join(utils.getDenseCorrespondenceSourceDir(), 'confi
 train_config = utils.getDictFromYamlFilename(train_config_file)
 dataset = SpartanDataset(config=config)
 
-logging_dir = "/home/priya/pytorch-dense-correspondence/data_volume/pdc_synthetic/trained_models/tutorials"
+logging_dir = "/home/priya/code/data_volume/pdc_synthetic_2/trained_models/tutorials"
 num_iterations = args.iters
 d = args.dim # the descriptor dimension
 name = args.name

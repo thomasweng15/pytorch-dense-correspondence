@@ -286,8 +286,13 @@ class DenseCorrespondenceTraining(object):
             self.save_network(dcn, optimizer, 0)
 
         for epoch in range(50):  # loop over the dataset multiple times
-
+#	    if epoch % 5 == 0:
+#		print "Sampling indices in range", (epoch//5*360, epoch//5*360 + 360)
+#            self._dataset._image_index_sample_range = range(epoch//5*360, epoch//5*360 + 360)
             for i, data in enumerate(self._data_loader, 0):
+	    	if loss_current_iteration % 360 == 0:
+	    	    print "Sampling indices in range", (loss_current_iteration//360*360 + 360)
+            	self._dataset._image_index_sample_range = range(loss_current_iteration//360*360 + 360)
                 loss_current_iteration += 1
                 start_iter = time.time()
 
@@ -344,8 +349,7 @@ class DenseCorrespondenceTraining(object):
                 optimizer.step()
 
                 elapsed = time.time() - start_iter
-
-                print "single iteration took %.3f seconds" %(elapsed)
+                print "iteration %d took %.3f seconds" %(loss_current_iteration, elapsed)
 
 
                 def update_plots(loss, match_loss, masked_non_match_loss, background_non_match_loss, blind_non_match_loss):

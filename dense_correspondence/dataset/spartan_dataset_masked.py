@@ -68,8 +68,6 @@ class SpartanDataset(DenseCorrespondenceDataset):
             # that get plotted in debug mode.
             # This is just so the dataset will "run".
             self._domain_randomize = False
-#            self.num_masked_non_matches_per_match = 5
-#            self.num_background_non_matches_per_match = 5
             self.num_background_non_matches_per_match = 5
             self.num_masked_non_matches_per_match = 5 
             self.cross_scene_num_samples = 1000
@@ -86,6 +84,7 @@ class SpartanDataset(DenseCorrespondenceDataset):
 
         self._pose_data = dict()
         self._knots_info = dict()
+        self._image_index_sample_range = None
         self._initialize_rgb_image_to_tensor()
 
         if mode == "test":
@@ -365,9 +364,12 @@ class SpartanDataset(DenseCorrespondenceDataset):
         :return:
         :rtype:
         """
-	knots_info = self.get_knots_info(scene_name)
-        image_idxs = knots_info.keys()
-        random_idx = int(random.choice(image_idxs))
+        if self._image_index_sample_range is None:
+    	    knots_info = self.get_knots_info(scene_name)
+            image_idxs = knots_info.keys()
+            random_idx = int(random.choice(image_idxs))
+        else:
+            random_idx = int(random.choice(self._image_index_sample_range))
         return random_idx	
 
     def get_random_object_id(self):
@@ -563,7 +565,6 @@ class SpartanDataset(DenseCorrespondenceDataset):
 
         image_a_idx = self.get_random_image_index(scene_name)
         image_a_rgb, image_a_mask = self.get_rgb_mask(scene_name, image_a_idx)
-        metadata['image_a_idx'] = image_a_idx
         # image b
         image_b_idx = self.get_random_image_index(scene_name)
         metadata['image_b_idx'] = image_b_idx

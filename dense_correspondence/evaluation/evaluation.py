@@ -782,7 +782,7 @@ class DenseCorrespondenceEvaluation(object):
 
         # find correspondences
         (uv_a_vec, uv_b_vec) = correspondence_finder.batch_find_pixel_correspondences(img_a_knots, img_b_knots, num_attempts=len(img_a_knots),
-                                                               device='CPU', img_a_mask=None)
+                                                               device='GPU', img_a_mask=None)
 
         if uv_a_vec is None:
             print "no matches found, returning"
@@ -912,7 +912,7 @@ class DenseCorrespondenceEvaluation(object):
         """
 
         DCE = DenseCorrespondenceEvaluation
-
+	uv_a = (min(639, uv_a[0]), min(479, uv_a[1]))
         # compute best match
         uv_b_pred, best_match_diff, norm_diffs =\
             DenseCorrespondenceNetwork.find_best_match(uv_a, res_a,

@@ -1,0 +1,6 @@
+logs_root_path: code/data_volume/pdc_synthetic_2/logs_proto
+object_id: "rope_902_simple_camfixed_depth"
+train:
+- "rope_902_simple_camfixed_depth"
+test:
+- "rope_902_simple_camfixed_depth_test"

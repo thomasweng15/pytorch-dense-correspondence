@@ -1,4 +1,3 @@
-
 import torch
 
 # math
@@ -7,6 +6,7 @@ import numpy as np
 import math
 from numpy.linalg import inv
 import random
+from itertools import cycle
 
 # io
 from PIL import Image
@@ -41,7 +41,33 @@ def pytorch_rand_select_knot_pixels(knots, num_samples=1):
     result = torch.Tensor([x, y]).type(dtype_long)
     return (result[0], result[1])
 
+#def pair_vertices(img_a_knots, img_b_knots):
+#    knots_a_list = []
+#    knots_b_list = []
+#    for i in range(len(img_a_knots)):
+#	if len(img_a_knots) != len(img_b_knots):
+#	    print(len(img_a_knots), len(img_b_knots))
+#	if img_a_knots[i][1] and img_b_knots[i][1]:
+#	    knots_a_list.append(img_a_knots[i][0])
+#	    knots_b_list.append(img_b_knots[i][0])
+#    print("Matches:", len(knots_a_list))
+#    x_a, y_a = [i[0] for i in knots_a_list], [j[1] for j in knots_a_list]
+#    x_b, y_b = [i[0] for i in knots_b_list], [j[1] for j in knots_b_list]
+#    res_a, res_b = torch.Tensor([x_a, y_a]).type(dtype_long), torch.Tensor([x_b, y_b]).type(dtype_long)
+#    return ((res_a[0], res_a[1]), (res_b[0], res_b[1]))
 
+def pair_vertices(img_a_knots, img_b_knots):
+    def zip_pixels(A, B):
+	zipped = zip(A, cycle(B)) if len(A) > len(B) else zip(cycle(A), B)
+	return list(zipped)
+    paired = [zip_pixels(img_a_knots[i], img_b_knots[i]) for i in range(len(img_a_knots))]
+    paired = [item for sublist in paired for item in sublist]
+    knots_a_list, knots_b_list = [p[0] for p in paired], [p[1] for p in paired]
+    x_a, y_a = [i[0] for i in knots_a_list], [j[1] for j in knots_a_list]
+    x_b, y_b = [i[0] for i in knots_b_list], [j[1] for j in knots_b_list]
+    res_a, res_b = torch.Tensor([x_a, y_a]).type(dtype_long), torch.Tensor([x_b, y_b]).type(dtype_long)
+    return ((res_a[0], res_a[1]), (res_b[0], res_b[1]))
+    
 def get_default_K_matrix():
     K = numpy.zeros((3,3))
     K[0,0] = 520.0
@@ -349,36 +375,9 @@ def batch_find_pixel_correspondences(img_a_knots, img_b_knots, img_a_mask=None, 
     if device == 'GPU':
         dtype_float = torch.cuda.FloatTensor
         dtype_long = torch.cuda.LongTensor
-    
-    if uv_a is None:
-        # No pixels provided, use mesh vertex pixels
-        uv_a = img_a_knots
-    else:
-        # Pixels provided, convert to torch tensor
-        uv_a = (torch.LongTensor([uv_a[0]]).type(dtype_long), torch.LongTensor([uv_a[1]]).type(dtype_long))
-        num_attempts = 1
-
-    if img_a_mask is None:
-        # if no mask is provided, just take the above sampled pixels
-        uv_a_vec = (torch.ones(num_attempts).type(dtype_long)*uv_a[0],torch.ones(num_attempts).type(dtype_long)*uv_a[1])
-    else:
-        # if mask provided, sample from mask pixels
-        img_a_mask = torch.from_numpy(img_a_mask).type(dtype_float)
-
-        # Option A: This next line samples from img mask
-        uv_a_vec = random_sample_from_masked_image_torch(img_a_mask, num_samples=num_attempts)
-        if uv_a_vec[0] is None:
-            return (None, None)
-    # formatting  
-    uv_a_vec_list = [uv_a_vec[0].tolist(), uv_a_vec[1].tolist()]
-    uv_a_res = torch.Tensor(uv_a_vec_list).type(dtype_long)
-    uv_a_res = (uv_a_res[0], uv_a_res[1])
-    # uv_b = matches for uv_a; since we are feeding in img_a_knots and indexing is consistent with img_b_knots, this is just img_b_knots (unzipped)
-    uv_b_list_x, uv_b_list_y = [i[0] for i in img_b_knots], [j[1] for j in img_b_knots]
-    # more formatting
-    uv_b = torch.Tensor([uv_b_list_x, uv_b_list_y]).type(dtype_long)
-    uv_b = (uv_b[0], uv_b[1])
+    uv_a, uv_b = pair_vertices(img_a_knots, img_b_knots)
+    uv_a, uv_b = (uv_a[0], uv_a[1]), (uv_b[0], uv_b[1])
     # finally, return matches in torch compatible format 
-    uv_a_vec = (torch.ones(num_attempts).type(dtype_long)*uv_a_res[0],torch.ones(num_attempts).type(dtype_long)*uv_a_res[1])
-    uv_b_vec = (torch.ones(num_attempts).type(dtype_long)*uv_b[0],torch.ones(num_attempts).type(dtype_long)*uv_b[1])
+    uv_a_vec = (torch.ones(len(uv_a[0])).type(dtype_long)*uv_a[0],torch.ones(len(uv_a[1])).type(dtype_long)*uv_a[1])
+    uv_b_vec = (torch.ones(len(uv_b[0])).type(dtype_long)*uv_b[0],torch.ones(len(uv_b[1])).type(dtype_long)*uv_b[1])
     return (uv_a_vec, uv_b_vec)

@@ -3,35 +3,22 @@ params:
   num_matches_per_image_pair: 100
 
 networks:
-  caterpillar_3:
-    path_to_network_params: code/data_volume/pdc/trained_models/tutorials/caterpillar_3/003500.pth
-  wolf_3:
-    path_to_network_params: code/data_volume/pdc_synthetic/trained_models/tutorials/wolf_3/003500.pth
-  synthetic_3:
-    path_to_network_params: code/data_volume/pdc_synthetic/trained_models/tutorials/synthetic_3/003500.pth
-  test_3:
-    path_to_network_params: code/data_volume/pdc_synthetic/trained_models/tutorials/test_3/003500.pth
-  synthetic_full_3:
-    path_to_network_params: code/data_volume/pdc_synthetic/trained_models/tutorials/synthetic_full_3/003500.pth
-  wolf_banana_pipe_3:
-    path_to_network_params: code/data_volume/pdc_synthetic/trained_models/tutorials/wolf_banana_pipe_3/003500.pth
-  wolf_norm_3:
-    path_to_network_params: code/data_volume/pdc_synthetic/trained_models/tutorials/wolf_norm_3/003500.pth
-  synthetic_norm_10obj_16:
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/synthetic_norm_10obj_16/003500.pth
-  synthetic_norm_10obj_9:
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/synthetic_norm_10obj_9/003500.pth
-  rope_rigid_norm_3:
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_rigid_norm_3/003500.pth
-  rope_rigid_norm_16:
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_rigid_norm_16/003500.pth
-  rope_nonrigid_40node_3:
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_40node_3/003500.pth
-  rope_nonrigid_50node_3:
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_50node_3/003500.pth
   rope_nonrigid_412vert_3:                                                                                                
     path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_412vert_3/003500.pth
+  rope_nonrigid_823vert_3:                                                                                                
+    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_823vert_3/003500.pth
+  rope_nonrigid_823vert_norm_3:                                                                                                
+    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_823vert_norm_3/003500.pth
+  rope_nonrigid_823vert_norm_16:                                                                                                
+    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_823vert_norm_16/003500.pth
+  rope_nonrigid_934vert_3:                                                                                                
+    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_934vert_3/003500.pth
+  rope_nonrigid_1713vert_3:                                                                                                
+    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_1713vert_3/003500.pth
+  rope_902_simple_camfixed_depth_norm_3:                                                                                                
+    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_902_simple_camfixed_depth_norm_3/003500.pth
 
 dataset: [] # which dataset to use, not used for now
+
 
 output_dir: code/data_volume/pdc/analysis
