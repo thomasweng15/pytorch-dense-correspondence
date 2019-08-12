@@ -1,0 +1,6 @@
+logs_root_path: code/data_volume/pdc_synthetic_2/logs_proto
+object_id: "rope_2079_mixed_noise_coils_test"
+train:
+- "rope_2079_mixed_noise_coils_test"
+test:
+- "rope_2079_mixed_noise_coils_test_test"

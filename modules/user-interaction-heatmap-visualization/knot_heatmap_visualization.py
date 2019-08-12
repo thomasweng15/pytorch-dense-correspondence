@@ -15,6 +15,7 @@ import dense_correspondence
 from dense_correspondence.evaluation.evaluation import *
 from dense_correspondence.evaluation.plotting import normalize_descriptor
 from dense_correspondence.network.dense_correspondence_network import DenseCorrespondenceNetwork
+import dense_correspondence.correspondence_tools.correspondence_finder as correspondence_finder
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../simple-pixel-correspondence-labeler"))
 from annotate_correspondences import label_colors, draw_reticle, pil_image_to_cv2, drawing_scale_config, numpy_to_cv2, label_colors
@@ -110,10 +111,13 @@ class HeatmapVisualization(object):
         self.img2_knots = self._dataset._knots_info[scene_name_2][image_2_idx]
 
     def _get_task_images(self):
-	self.img1_pil = self._dataset.get_rgb_image('./images_start/000000_rgb.png')
-	self.img2_pil = self._dataset.get_rgb_image('./images_goal/000000_rgb.png')
-	self.img1_knots = utils.getDictFromJSONFilename('./images_start/knots_info.json')["0"][0]
-	self.img2_knots = utils.getDictFromJSONFilename('./images_goal/knots_info.json')["0"][0]
+	self.img1_pil = self._dataset.get_rgb_image('./images/000025_rgb.png')
+        img1_mask = self._dataset.get_mask_image('./image_masks/000025_mask.png')
+	self.img2_pil = self._dataset.get_rgb_image('./images/000018_rgb.png')
+        pixs = correspondence_finder.random_sample_from_masked_image_torch(np.asarray(img1_mask), 25)
+	self.img1_knots = list(zip(pixs[0], pixs[1]))
+	#self.img1_knots = utils.getDictFromJSONFilename('./images_start/knots_info.json')["0"][0]
+	#self.img2_knots = utils.getDictFromJSONFilename('./images_goal/knots_info.json')["0"][0]
 
     def _compute_descriptors(self, knot_idx):
         """
@@ -206,8 +210,8 @@ class HeatmapVisualization(object):
     def run(self):
         self._get_task_images()
 	pixels = []
-        for i in range(len(utils.getDictFromJSONFilename('./images_start/knots_info.json')["0"][0])):
-	    print "getting new image", i
+#        for i in range(len(utils.getDictFromJSONFilename('./images_start/knots_info.json')["0"][0])):
+        for i in range(25):
 	    print "computing descriptors"
             source, blended, target, p = self._compute_descriptors(i)
 	    pixels.append(p)

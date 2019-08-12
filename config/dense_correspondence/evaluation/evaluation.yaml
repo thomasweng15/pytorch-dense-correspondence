@@ -17,7 +17,12 @@ networks:
     path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_1713vert_3/003500.pth
   rope_902_simple_camfixed_depth_norm_3:                                                                                                
     path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_902_simple_camfixed_depth_norm_3/003500.pth
-
+  rope_955_simple_realistic_depth_norm_3:                                                                                                
+    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_955_simple_realistic_depth_norm_3/003500.pth
+  rope_955_noisy_depth_norm_3:                                                                                                
+    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_955_noisy_depth_norm_3/003500.pth
+  rope_1663_noisy_vary_depth_norm_3:
+    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_1663_noisy_vary_depth_norm_3/003500.pth
 dataset: [] # which dataset to use, not used for now
 
 

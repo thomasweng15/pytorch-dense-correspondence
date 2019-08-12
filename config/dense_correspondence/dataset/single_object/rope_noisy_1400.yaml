@@ -1,0 +1,6 @@
+logs_root_path: code/data_volume/pdc_synthetic_2/logs_proto
+object_id: "rope_noisy_1400"
+train:
+- "rope_noisy_1400"
+test:
+- "rope_noisy_1400_test"
