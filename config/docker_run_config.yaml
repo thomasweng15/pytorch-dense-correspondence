@@ -13,5 +13,6 @@ iiwa-2:
 jensen:
   priya:
     path_to_data_directory: '/raid/priya/data'
-
+  brijen:
+    path_to_data_diretory: '/raid/brijen/data'
 
