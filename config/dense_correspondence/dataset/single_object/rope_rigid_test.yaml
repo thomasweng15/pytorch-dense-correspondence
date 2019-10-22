@@ -1,6 +1,0 @@
-logs_root_path: code/data_volume/pdc_synthetic_2/logs_proto
-object_id: "rope_rigid_test"
-train:
-- "rope_rigid_test"
-test:
-- "rope_rigid_test_test"

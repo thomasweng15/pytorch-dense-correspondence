@@ -1,6 +1,0 @@
-logs_root_path: code/data_volume/pdc_synthetic_2/logs_proto
-
-single_object_scenes_config_files:
-- rope_nonrigid_934vert.yaml
-
-multi_object_scenes_config_files: []

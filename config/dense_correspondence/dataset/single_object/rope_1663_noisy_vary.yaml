@@ -1,6 +1,0 @@
-logs_root_path: code/data_volume/pdc_synthetic_2/logs_proto
-object_id: "rope_1663_noisy_vary"
-train:
-- "rope_1663_noisy_vary"
-test:
-- "rope_1663_noisy_vary_test"
