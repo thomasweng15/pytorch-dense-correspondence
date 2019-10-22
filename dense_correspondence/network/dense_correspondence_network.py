@@ -402,6 +402,18 @@ class DenseCorrespondenceNetwork(nn.Module):
 
         """
 	# hack!!
+        #Adi: Bigger hack to handle negative pixel values
+        #u = 0
+        #v = 0
+        #if pixel_a[0] <= 0:
+        #    u = 1
+        #else:
+	#    u = min(pixel_a[0], 640 - 1)
+        #if pixel_a[1] <= 0:
+        #    v = 1
+        #else:
+	#    v = min(pixel_a[1], 480 - 1)
+
 	u = min(pixel_a[0], 640 - 1)
 	v = min(pixel_a[1], 480 - 1)
         descriptor_at_pixel = res_a[v, u]
