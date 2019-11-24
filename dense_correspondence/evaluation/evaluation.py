@@ -2541,7 +2541,7 @@ class DenseCorrespondenceEvaluationPlotter(object):
         if use_masked_plots:
             plot = DCEP.make_pixel_match_error_plot(axes[0,1], df, label=label, masked=True)
         ax.legend()
-      	plt.savefig('/home/priya/code/data_volume/pixel_match_new.png') 
+      	#plt.savefig('/home/adi/code/data_volume/pixel_match_new.png') 
         # 3D match error
         #ax = get_ax(axes, 1)
         #plot = DCEP.make_descriptor_accuracy_plot(ax, df, label=label)

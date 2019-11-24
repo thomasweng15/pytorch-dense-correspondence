@@ -5,25 +5,11 @@ params:
 networks:
   rope_nonrigid_412vert_3:                                                                                                
     path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_412vert_3/003500.pth
-  rope_nonrigid_823vert_3:                                                                                                
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_823vert_3/003500.pth
-  rope_nonrigid_823vert_norm_3:                                                                                                
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_823vert_norm_3/003500.pth
-  rope_nonrigid_823vert_norm_16:                                                                                                
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_823vert_norm_16/003500.pth
-  rope_nonrigid_934vert_3:                                                                                                
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_934vert_3/003500.pth
-  rope_nonrigid_1713vert_3:                                                                                                
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_nonrigid_1713vert_3/003500.pth
-  rope_902_simple_camfixed_depth_norm_3:                                                                                                
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_902_simple_camfixed_depth_norm_3/003500.pth
-  rope_955_simple_realistic_depth_norm_3:                                                                                                
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_955_simple_realistic_depth_norm_3/003500.pth
-  rope_955_noisy_depth_norm_3:                                                                                                
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_955_noisy_depth_norm_3/003500.pth
-  rope_1663_noisy_vary_depth_norm_3:
-    path_to_network_params: code/data_volume/pdc_synthetic_2/trained_models/tutorials/rope_1663_noisy_vary_depth_norm_3/003500.pth
+  tier3_oracle_1824_3:                                                                                                
+    path_to_network_params: code/data_volume/fabric_data/trained_models/tutorials/tier3_oracle_1824_3/003500.pth
+  tier3_oracle_1824_depth_3:                                                                                                
+    path_to_network_params: code/data_volume/fabric_data/trained_models/tutorials/tier3_oracle_1824_depth_3/003500.pth
 dataset: [] # which dataset to use, not used for now
 
 
-output_dir: code/data_volume/pdc/analysis
+output_dir: code/data_volume/fabric_data/analysis

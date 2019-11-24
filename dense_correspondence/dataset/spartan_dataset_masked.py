@@ -566,7 +566,12 @@ class SpartanDataset(DenseCorrespondenceDataset):
         image_a_idx = self.get_random_image_index(scene_name)
         image_a_rgb, image_a_mask = self.get_rgb_mask(scene_name, image_a_idx)
         # image b
+        #Adi: Let's try sampling images only separated by one action to enforce time/action consistency
         image_b_idx = self.get_random_image_index(scene_name)
+        #image_b_idx = image_a_idx + 1
+        #total_images = len(self.get_knots_info(scene_name).keys())
+        #image_b_idx = min(image_b_idx, total_images - 1)
+
         metadata['image_b_idx'] = image_b_idx
         if image_b_idx is None:
             logging.info("no frame with sufficiently different pose found, returning")
@@ -581,7 +586,20 @@ class SpartanDataset(DenseCorrespondenceDataset):
         else:
             correspondence_mask = None
         img_a_knots, img_b_knots = self._knots_info[scene_name][str(image_a_idx)], self._knots_info[scene_name][str(image_b_idx)]
+
+
+        image_b_mask_torch = torch.from_numpy(np.asarray(image_b_mask)).type(torch.FloatTensor)
+        #image_b_shape = (480, 640)
+        image_b_shape = (image_b_mask_torch.shape[0], image_b_mask_torch.shape[1])
+        image_width = image_b_shape[1]
+        image_height = image_b_shape[0]
         # find correspondences
+
+        #Adi: Let's make sure that we aren't getting any out of bounds errors/negative pixel errors here:
+        #Adi: TODO: replace the 55's with the width and height variables
+        img_a_knots = [[[min(max(0, pixels[0][0]), image_width - 1), min(max(0, pixels[0][1]), image_height - 1)]] for pixels in img_a_knots]
+        img_b_knots = [[[min(max(0, pixels[0][0]), image_width - 1), min(max(0, pixels[0][1]), image_height - 1)]] for pixels in img_b_knots]
+
         uv_a, uv_b = correspondence_finder.batch_find_pixel_correspondences(img_a_knots, img_b_knots, img_a_mask=None,
                                                                             num_attempts=min(len(img_a_knots), self.num_matching_attempts))
 
@@ -610,10 +628,6 @@ class SpartanDataset(DenseCorrespondenceDataset):
         #         [image_b_rgb, image_b_depth, image_b_mask], uv_b)
 
         # find non_correspondences
-        image_b_mask_torch = torch.from_numpy(np.asarray(image_b_mask)).type(torch.FloatTensor)
-        image_b_shape = (480, 640)
-        image_width = image_b_shape[1]
-        image_height = image_b_shape[0]
 
         uv_b_masked_non_matches = \
             correspondence_finder.create_non_correspondences(uv_b,
