@@ -509,7 +509,8 @@ class SpartanDataset(DenseCorrespondenceDataset):
         metadata["scene_name"] = scene_name
         metadata["type"] = SpartanDatasetDataType.SINGLE_OBJECT_WITHIN_SCENE
 
-        return self.get_within_scene_data(scene_name, metadata)
+        #return self.get_within_scene_data(scene_name, metadata)
+        return self.get_within_scene_data(scene_name, metadata, return_mask=True)
 
     def get_multi_object_within_scene_data(self):
         """
@@ -525,9 +526,10 @@ class SpartanDataset(DenseCorrespondenceDataset):
         metadata["scene_name"] = scene_name
         metadata["type"] = SpartanDatasetDataType.MULTI_OBJECT
 
-        return self.get_within_scene_data(scene_name, metadata)
+        #return self.get_within_scene_data(scene_name, metadata)
+        return self.get_within_scene_data(scene_name, metadata, return_mask=False)
 
-    def get_within_scene_data(self, scene_name, metadata, for_synthetic_multi_object=False):
+    def get_within_scene_data(self, scene_name, metadata, for_synthetic_multi_object=False, return_mask=False):
         """
         The method through which the dataset is accessed for training.
         Each call is is the result of
@@ -774,6 +776,9 @@ class SpartanDataset(DenseCorrespondenceDataset):
                 plt.title("Mask of img a object pixels for which there was NO match")
                 plt.show()
 
+
+        if return_mask:
+            return metadata["type"], image_a_rgb, image_b_rgb, image_a_mask_torch, image_b_mask_torch, matches_a, matches_b, masked_non_matches_a, masked_non_matches_b, background_non_matches_a, background_non_matches_b, blind_non_matches_a, blind_non_matches_b, metadata
 
 
         return metadata["type"], image_a_rgb, image_b_rgb, matches_a, matches_b, masked_non_matches_a, masked_non_matches_b, background_non_matches_a, background_non_matches_b, blind_non_matches_a, blind_non_matches_b, metadata
@@ -1132,7 +1137,8 @@ class SpartanDataset(DenseCorrespondenceDataset):
         :rtype:
         """
         result = uv_tensor[1].long() * image_width + uv_tensor[0].long()
-	return torch.min(result, torch.ones_like(result).long() * (( image_width * 480 ) - 1))
+	#return torch.min(result, torch.ones_like(result).long() * (( image_width * 480 ) - 1))
+        return result
 
     @staticmethod
     def mask_image_from_uv_flat_tensor(uv_flat_tensor, image_width, image_height):

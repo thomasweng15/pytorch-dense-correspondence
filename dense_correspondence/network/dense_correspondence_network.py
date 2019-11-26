@@ -43,10 +43,8 @@ class DenseCorrespondenceNetwork(nn.Module):
 
         self._fcn = fcn
         self._descriptor_dimension = descriptor_dimension
-        #self._image_width = image_width
-        #self._image_height = image_height
-        self._image_width = 56
-        self._image_height = 56
+        self._image_width = image_width
+        self._image_height = image_height
 
         # this defaults to the identity transform
         self._image_mean = np.zeros(3)
@@ -418,10 +416,10 @@ class DenseCorrespondenceNetwork(nn.Module):
 
 	#u = min(pixel_a[0], 640 - 1)
 	#v = min(pixel_a[1], 480 - 1)
-	u = min(pixel_a[0], 56 - 1)
-	v = min(pixel_a[1], 56 - 1)
         descriptor_at_pixel = res_a[v, u]
         height, width, _ = res_a.shape
+	u = min(pixel_a[0], width - 1)
+	v = min(pixel_a[1], height - 1)
 
         if debug:
             print "height: ", height

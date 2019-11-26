@@ -2,6 +2,8 @@ from dense_correspondence.dataset.spartan_dataset_masked import SpartanDataset, 
 from dense_correspondence.loss_functions.pixelwise_contrastive_loss import PixelwiseContrastiveLoss
 
 import torch
+import torch.nn.functional as F
+import numpy as np
 from torch.autograd import Variable
 
 def get_loss(pixelwise_contrastive_loss, match_type, 
@@ -60,6 +62,53 @@ def get_loss(pixelwise_contrastive_loss, match_type,
         raise ValueError("Should only have above scenes?")
 
 
+def flattened_mask_indices(img_mask, width=640, height=480, inverse=False):
+    mask = img_mask.view(width*height,1).squeeze(1)
+    if inverse:
+        inv_mask = 1 - mask
+        inv_mask_indices_flat = torch.nonzero(inv_mask)
+        return inv_mask_indices_flat
+    else:
+        return torch.nonzero(mask)
+
+def gauss_2d_dist(width, height, sigma, u, v, masked_indices=None):
+    mu_x = u
+    mu_y = v
+    X,Y=np.meshgrid(np.linspace(0,width,width),np.linspace(0,height,height))
+    G=np.exp(-((X-mu_x)**2+(Y-mu_y)**2)/(2.0*sigma**2)).ravel()
+    if masked_indices is not None:
+        #G[masked_indices] = 1e-100 # zero probability on non-masked regions (not true 0 -- this made softmax numerically unstable)
+        G[masked_indices] = 0.0
+    G /= G.sum()
+    return torch.from_numpy(G).double().cuda()
+
+def distributional_loss_single_match(image_a_pred, image_b_pred, match_a, match_b, masked_indices=None, image_width=640, image_height=480):
+    match_b_descriptor = torch.index_select(image_b_pred, 1, match_b) # get descriptor for image_b at match_b
+    norm_degree = 2
+    descriptor_diffs = image_a_pred.squeeze() - match_b_descriptor.squeeze()
+    norm_diffs = descriptor_diffs.norm(norm_degree, 1).pow(2)
+    p_a = F.softmax(-1 * norm_diffs, dim=0).double() # compute current distribution
+    u = match_a.item()%image_width
+    v = match_a.item()/image_width
+    q_a = gauss_2d_dist(image_width, image_height, 10, u, v, masked_indices=masked_indices)
+    q_a += 1e-300
+    loss = F.kl_div(q_a.log(), p_a, None, None, 'sum') # compute kl divergence loss
+    return loss
+
+def get_distributional_loss(image_a_pred, image_b_pred, image_a_mask, image_b_mask,  matches_a, matches_b):
+    loss = 0.0
+    masked_indices_a = flattened_mask_indices(image_a_mask, inverse=True)
+    masked_indices_b = flattened_mask_indices(image_b_mask, inverse=True)
+    count = 0
+    for match_a, match_b in list(zip(matches_a, matches_b)):#[::8]:
+        count += 1
+        loss += 0.5*(distributional_loss_single_match(image_a_pred, image_b_pred, match_a, match_b, masked_indices=masked_indices_a) \
+        + distributional_loss_single_match(image_b_pred, image_a_pred, match_b, match_a, masked_indices=masked_indices_b))
+        #loss += 0.5*(distributional_loss_single_match(image_a_pred, image_b_pred, match_a, match_b, masked_indices=None) \
+        #+ distributional_loss_single_match(image_b_pred, image_a_pred, match_b, match_a, masked_indices=None))
+    return loss/count
+
+
 def get_within_scene_loss(pixelwise_contrastive_loss, image_a_pred, image_b_pred,
                                         matches_a,    matches_b,
                                         masked_non_matches_a, masked_non_matches_b,
@@ -68,6 +117,7 @@ def get_within_scene_loss(pixelwise_contrastive_loss, image_a_pred, image_b_pred
     """
     Simple wrapper for pixelwise_contrastive_loss functions.  Args and return args documented above in get_loss()
     """
+    get_distributional_loss(image_a_pred, image_b_pred, matches_a, matches_b)
     pcl = pixelwise_contrastive_loss
 
     match_loss, masked_non_match_loss, num_masked_hard_negatives =\
