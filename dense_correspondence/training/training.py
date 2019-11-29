@@ -344,6 +344,10 @@ class DenseCorrespondenceTraining(object):
                 image_b_pred = dcn.forward(img_b)
                 image_b_pred = dcn.process_network_output(image_b_pred, batch_size)
 
+
+                #Adi: Choose the type of loss here (contrastive, distributional, lipschitz, etc.):
+
+                #Contrastive
                 # get loss
                 #loss, match_loss, masked_non_match_loss, \
                 #background_non_match_loss, blind_non_match_loss = loss_composer.get_loss(pixelwise_contrastive_loss, match_type,
@@ -353,7 +357,12 @@ class DenseCorrespondenceTraining(object):
                 #                                                                background_non_matches_a, background_non_matches_b,
                 #                                                                blind_non_matches_a, blind_non_matches_b)
                 
-                loss = loss_composer.get_distributional_loss(image_a_pred, image_b_pred, img_a_mask, img_b_mask, matches_a, matches_b)
+                #Adi: Distributional
+                #loss = loss_composer.get_distributional_loss(image_a_pred, image_b_pred, img_a_mask, img_b_mask, matches_a, matches_b)
+
+                #Adi: Lipschitz
+                loss = loss_composer.get_lipschitz_loss(image_a_pred, image_b_pred, img_a_mask, img_b_mask, matches_a, matches_b)
+                
                 print "loss:", loss
                 
 

@@ -108,6 +108,58 @@ def get_distributional_loss(image_a_pred, image_b_pred, image_a_mask, image_b_ma
         #+ distributional_loss_single_match(image_b_pred, image_a_pred, match_b, match_a, masked_indices=None))
     return loss/count
 
+def lipschitz_single(match_b, match_b2, image_a_pred, image_b_pred, L, d, image_width=640, image_height=480):
+    match_b_descriptor = torch.index_select(image_b_pred, 1, match_b) # get descriptor for image_b at match_b
+    norm_degree = 2
+    descriptor_diffs = image_a_pred.squeeze() - match_b_descriptor.squeeze()
+    norm_diffs = descriptor_diffs.norm(norm_degree, 1).pow(2)
+    best_match_idx_flattened = torch.argmin(norm_diffs) #Adi: do we need to change the dim?
+    #print("BEST MATCH IDX:")
+    #print(best_match_idx_flattened)
+    #print(best_match_idx_flattened.shape)
+    u_b = best_match_idx_flattened%image_width
+    v_b = best_match_idx_flattened/image_width
+    unraveled = torch.stack((u_b, v_b)).type(torch.float64)
+    #print("Unraveled:")
+    #print(unraveled)
+    #print(unraveled.shape)
+    uv_b = Variable(unraveled.cuda().squeeze(), requires_grad=True)
+    #print(uv_b)
+
+    match_b2_descriptor = torch.index_select(image_b_pred, 1, match_b2) # get descriptor for image_b at match_b
+    descriptor_diffs_2 = image_a_pred.squeeze() - match_b2_descriptor.squeeze()
+    norm_diffs_2 = descriptor_diffs_2.norm(norm_degree, 1).pow(2)
+    best_match_idx_flattened_2 = torch.argmin(norm_diffs_2) #Adi: do we need to change the dim?
+    u_b2 = best_match_idx_flattened_2%image_width
+    v_b2 = best_match_idx_flattened_2/image_width
+    unraveled2 = torch.stack((u_b2, v_b2)).type(torch.float64)
+    uv_b2 = Variable(unraveled2.cuda().squeeze(), requires_grad=True)
+    #print(uv_b2)
+
+    constraint = torch.sqrt((uv_b - uv_b2).pow(2).sum(0)) - (L * d)
+    #print("L2 Pixel ERROR")
+    #print(constraint)
+
+    return constraint 
+
+
+def get_lipschitz_loss(image_a_pred, image_b_pred, image_a_mask, image_b_mask,  matches_a, matches_b):
+    loss = 0.0
+    masked_indices_a = flattened_mask_indices(image_a_mask, inverse=True)
+    masked_indices_b = flattened_mask_indices(image_b_mask, inverse=True)
+    count = 0
+    for match_a, match_b in list(zip(matches_a, matches_b)):
+        count += 1
+        d_loss = 0.5*(distributional_loss_single_match(image_a_pred, image_b_pred, match_a, match_b, masked_indices=masked_indices_a) \
+        + distributional_loss_single_match(image_b_pred, image_a_pred, match_b, match_a, masked_indices=masked_indices_b))
+        for flattened_pixel in vicinity:
+            constraint = lipschitz_single(match_b, flattened_pixel, image_a_pred, image_b_pred, 1, d) 
+            lip_penalty = F.relu(constraint).sum()   
+            loss += d_loss + lip_penalty
+    return loss/count
+
+
+
 
 def get_within_scene_loss(pixelwise_contrastive_loss, image_a_pred, image_b_pred,
                                         matches_a,    matches_b,
