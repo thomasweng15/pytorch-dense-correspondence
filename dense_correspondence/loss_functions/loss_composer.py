@@ -143,7 +143,7 @@ def lipschitz_single(match_b, match_b2, image_a_pred, image_b_pred, L, d, image_
     return constraint 
 
 
-def get_lipschitz_loss(image_a_pred, image_b_pred, image_a_mask, image_b_mask,  matches_a, matches_b):
+def get_lipschitz_loss(image_a_pred, image_b_pred, image_a_mask, image_b_mask,  matches_a, matches_b, image_width=480, image_height=640):
     loss = 0.0
     masked_indices_a = flattened_mask_indices(image_a_mask, inverse=True)
     masked_indices_b = flattened_mask_indices(image_b_mask, inverse=True)
@@ -152,9 +152,24 @@ def get_lipschitz_loss(image_a_pred, image_b_pred, image_a_mask, image_b_mask,  
         count += 1
         d_loss = 0.5*(distributional_loss_single_match(image_a_pred, image_b_pred, match_a, match_b, masked_indices=masked_indices_a) \
         + distributional_loss_single_match(image_b_pred, image_a_pred, match_b, match_a, masked_indices=masked_indices_b))
+    
+        u = match_b%image_width
+        v = match_b/image_width
+        w = torch.Tensor([640]).type(torch.long).cuda() 
+        h = torch.Tensor([480]).type(torch.long).cuda() 
+        zero = torch.Tensor([0]).type(torch.long).cuda() 
+        vicinity = []
+        for i in range(-1, 1):
+            for j in range(-1, 1):
+                flattened_new = torch.max(zero, torch.min((v+i), h))*image_width + max(zero, min((u+j), w))
+                d = np.sqrt(i**2 + j**2)
+                vicinity.append([flattened_new, d])
+        
         for flattened_pixel in vicinity:
-            constraint = lipschitz_single(match_b, flattened_pixel, image_a_pred, image_b_pred, 1, d) 
+            constraint = lipschitz_single(match_b, flattened_pixel[0], image_a_pred, image_b_pred, 1, flattened_pixel[1]) 
+            #constraint = lipschitz_single(match_b, match_b + 1, image_a_pred, image_b_pred, 1, 1) 
             lip_penalty = F.relu(constraint).sum()   
+            #lip_penalty = constraint
             loss += d_loss + lip_penalty
     return loss/count
 
