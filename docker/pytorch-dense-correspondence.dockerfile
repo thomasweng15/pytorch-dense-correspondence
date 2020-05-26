@@ -45,7 +45,7 @@ RUN chown $USER_NAME:$USER_NAME -R .config
 # change ownership of everything to our user
 RUN cd $WORKDIR && chown $USER_NAME:$USER_NAME -R .
 
-
+RUN echo 'PS1="\[\033[42m\]\[\033[31m\]\u@\h:\w\$"' >> /home/$USER_NAME/.bashrc
 
 ENTRYPOINT bash -c "source ~/code/docker/entrypoint.sh && /bin/bash"
 

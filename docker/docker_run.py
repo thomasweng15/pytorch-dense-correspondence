@@ -9,12 +9,13 @@ import getpass
 
 if __name__=="__main__":
     user_name = getpass.getuser()
-    default_image_name = 'adi-pytorch-dense-correspondence'
+    default_image_name = user_name + '-pytorch-dense-correspondence'
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--image", type=str,
         help="(required) name of the image that this container is derived from", default=default_image_name)
 
-    parser.add_argument("-c", "--container", type=str, default="pytorch-container", help="(optional) name of the container")\
+    container_name = user_name + "-pytorch-container"
+    parser.add_argument("-c", "--container", type=str, default=container_name, help="(optional) name of the container")\
 
     parser.add_argument("-d", "--dry_run", action='store_true', help="(optional) perform a dry_run, print the command that would have been executed but don't execute it.")
 
@@ -34,7 +35,7 @@ if __name__=="__main__":
     dense_correspondence_source_dir = os.path.join(home_directory, 'code')
 
     cmd = "xhost +local:root \n"
-    cmd += "nvidia-docker run --runtime=nvidia"
+    cmd += "docker run --gpus all"
     if args.container:
         cmd += " --name %(container_name)s " % {'container_name': args.container}
     cmd += "-e NVIDIA_DRIVER_CAPABILITIES=compute,utility "
