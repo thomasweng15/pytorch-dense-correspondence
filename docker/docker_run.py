@@ -36,8 +36,7 @@ if __name__=="__main__":
 
     cmd = "xhost +local:root \n"
     cmd += "docker run --gpus all"
-    if args.container:
-        cmd += " --name %(container_name)s " % {'container_name': args.container}
+    cmd += " --name %(container_name)s " % {'container_name': args.container}
     cmd += "-e NVIDIA_DRIVER_CAPABILITIES=compute,utility "
 
     cmd += " -e DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix:rw "     # enable graphics 
@@ -45,6 +44,7 @@ if __name__=="__main__":
         % {'source_dir': source_dir, 'home_directory': home_directory}              # mount source
     cmd += " -v ~/.ssh:%(home_directory)s/.ssh " % {'home_directory': home_directory}   # mount ssh keys
     cmd += " -v /media:/media " #mount media
+    cmd += " -v ~/.tmux.conf:%(home_directory)s/.tmux.conf " % {'home_directory': home_directory}
     cmd += " -v ~/.torch:%(home_directory)s/.torch " % {'home_directory': home_directory}  # mount torch folder 
                                                         # where pytorch standard models (i.e. resnet34) are stored
 
